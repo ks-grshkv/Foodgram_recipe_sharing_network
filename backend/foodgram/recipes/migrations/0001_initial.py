@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
                 ('text', models.TextField()),
                 ('title', models.TextField()),
                 ('pub_date', models.DateTimeField(auto_now_add=True)),
-                ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='recipies', to=settings.AUTH_USER_MODEL)),
+                ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='recipes', to=settings.AUTH_USER_MODEL)),
             ],
         ),
     ]
