@@ -1,46 +1,65 @@
-# from enum import Enum
+from enum import Enum
 
-# from django.contrib.auth.models import AbstractUser
-# from django.db import models
-
-
-# class Roles(Enum):
-#     admin = 'admin'
-#     user = 'user'
-#     moderator = 'moderator'
+from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 
-# class User(AbstractUser):
-#     CHOICES = (
-#         (Roles.admin.name, 'Администратор'),
-#         (Roles.user.name, 'Пользователь'),
-#         (Roles.moderator.name, 'Модератор'),
-#     )
-#     bio = models.TextField(
-#         verbose_name='Биография',
-#         blank=True,
-#     )
-#     role = models.CharField(
-#         verbose_name='Пользовательская роль',
-#         max_length=10,
-#         choices=CHOICES,
-#         default=Roles.user.name,
-#     )
-#     confirmation_code = models.CharField(
-#         verbose_name='Код подтверждения',
-#         max_length=36,
-#         default='00000',
-#         blank=False,
-#     )
+class Roles(Enum):
+    admin = 'admin'
+    user = 'user'
 
-#     @property
-#     def is_admin(self):
-#         return self.role == Roles.admin.name
 
-#     @property
-#     def is_user(self):
-#         return self.role == Roles.user.name
+class User(AbstractUser):
+    CHOICES = (
+        (Roles.admin.name, 'Администратор'),
+        (Roles.user.name, 'Пользователь'),
+    )
+    first_name = models.CharField(
+        max_length=150,
+    )
+    last_name = models.CharField(
+        max_length=150,
+    )
+    email = models.EmailField(
+        max_length=254,
+    )
+    username = models.CharField(
+        max_length=150,
+        unique=True
+    )
+    password = models.CharField(
+        max_length=150
+    )
+    role = models.CharField(
+        verbose_name='Пользовательская роль',
+        max_length=10,
+        choices=CHOICES,
+        default=Roles.user.name,
+    )
 
-#     @property
-#     def is_moderator(self):
-#         return self.role == Roles.moderator.name
+    @property
+    def is_admin(self):
+        return self.role == Roles.admin.name
+
+    @property
+    def is_user(self):
+        return self.role == Roles.user.name
+
+
+class Subscription(models.Model):
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following',
+        blank=True,
+        null=True,
+        verbose_name='Автор'
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='follower',
+        blank=True,
+        null=True,
+        verbose_name='Пользователь'
+    )

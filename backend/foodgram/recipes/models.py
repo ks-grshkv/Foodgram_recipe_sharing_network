@@ -1,15 +1,12 @@
 from django.db import models
-from django.contrib.auth import get_user_model
+# from django.contrib.auth import get_user_model
+from users.models import User
 
-
-User = get_user_model()
+# User = get_user_model()
 
 
 class Tag(models.Model):
-    name = models.CharField(
-        max_length=256,
-        unique=True,
-        verbose_name='Тег')
+    name = models.CharField(max_length=256)
     slug = models.SlugField(unique=True, max_length=50)
     color = models.CharField(max_length=7, default="#ffffff")
 
@@ -18,50 +15,84 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    title = models.CharField(max_length=256)
+    name = models.CharField(max_length=256)
     unit = models.CharField(max_length=256)
+
+    def __str__(self):
+        return self.name
 
 
 class Recipy(models.Model):
     name = models.CharField(max_length=256)
     text = models.TextField()
-    tag = models.ManyToManyField(Tag, blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
     image = models.ImageField(
         verbose_name='Изображение',
-        upload_to='recipes/',
+        upload_to='recipes/media/',
         null=True,
-        blank=True)
+        blank=True
+    )
     cooking_time = models.IntegerField(null=True)
     pub_date = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='recipes')
-    ingredients = models.ManyToManyField(Ingredient, blank=True)
+        related_name='recipes'
+    )
+    ingredients = models.ManyToManyField(
+        Ingredient,
+        # through='IngredientsToRecipe',
+        # through_fields=('recipy', 'ingredient')
+    )
 
     filter_horizontal = ('tag')
 
 
-class Subscription(models.Model):
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='following',
-        blank=True,
-        null=True,
-        verbose_name='Автор')
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='follower',
-        blank=True,
-        null=True,
-        verbose_name='Пользователь')
+class IngredientsToRecipe(models.Model):
+    ingredient = models.ForeignKey(
+        Ingredient,
+        related_name='ingredients_to_recipy',
+        on_delete=models.CASCADE
+    )
+    amount = models.PositiveSmallIntegerField()
+    recipy = models.ForeignKey(
+        Recipy,
+        related_name='recipy_with_ingredients',
+        on_delete=models.CASCADE
+    )
 
 
 class Favorite(models.Model):
-    pass
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='favorite',
+        blank=True,
+        null=True,
+        verbose_name='Пользователь'
+    )
+    recipy = models.ForeignKey(
+        Recipy,
+        related_name='favorite',
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True
+    )
 
 
 class ShoppingCart(models.Model):
-    pass
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='shopping_cart',
+        blank=True,
+        null=True,
+        verbose_name='Пользователь'
+    )
+    recipy = models.ForeignKey(
+        Recipy,
+        related_name='shopping_cart',
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True
+    )
