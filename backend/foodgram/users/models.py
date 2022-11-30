@@ -36,6 +36,12 @@ class User(AbstractUser):
         choices=CHOICES,
         default=Roles.user.name,
     )
+    following = models.ManyToManyField(
+        "self",
+        through='Subscription',
+        related_name="followers",
+        verbose_name="following",
+        symmetrical=False)
 
     @property
     def is_admin(self):
@@ -50,7 +56,7 @@ class Subscription(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='following',
+        related_name='following_to',
         blank=True,
         null=True,
         verbose_name='Автор'

@@ -1,14 +1,15 @@
 from http import HTTPStatus
 
 from django.shortcuts import get_object_or_404
+from http import HTTPStatus
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import User
+from .models import User, Subscription
 from .permissions import IsAdminOrSuper, IsAuth
-from .serializers import GetTokenSerializer, UserSerializer
+from .serializers import GetTokenSerializer, UserSerializer, SubscriptionSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -20,16 +21,38 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     serializer_class = UserSerializer
     queryset = User.objects.all()
-    permission_classes = (IsAdminOrSuper, )
-    lookup_field = 'username'
-
+    # permission_classes = (IsAdminOrSuper, )
+    lookup_field = 'id'
+    
     def get_object(self):
         queryset = self.get_queryset()
         obj = get_object_or_404(
             queryset,
-            username=self.kwargs[self.lookup_field]
+            id=self.kwargs[self.lookup_field]
         )
         return obj
+    
+    def create(self, serializer):
+        serializer = self.serializer_class(data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        user = User.objects.get(
+            username=self.request.data['username'],
+            email=self.request.data['email'],
+            password=self.request.data['password'],
+            last_name=self.request.data['last_name'],
+            first_name=self.request.data['first_name'],
+        )
+        user.save()
+        return Response({
+            "username": self.request.data['username'],
+            "email": self.request.data['email'],
+        })
+
+    # def list(self, request):
+    #     queryset = self.get_queryset()
+    #     return Response(queryset)
 
     @action(
         detail=False,
@@ -57,32 +80,46 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data)
 
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='subscriptions',
+        permission_classes=(IsAuth, )
+    )
+    def subscriptions(self, request, pk=None):
+        user = get_object_or_404(User, id=self.request.user.id)
 
-class UserRegisterView(generics.GenericAPIView):
-    """
-    Регистрация нового пользователя.
-    Принимаем username и email, высылаем на почту код.
-    """
-    serializer_class = UserSerializer
+        subscriptions = user.following.all()
+        subscriptions = Subscription.objects.filter(user=user.id)
+        author = user.following.all()
+        print(user, subscriptions, author)
+        return Response(author)
 
-    def post(self, serializer):
-        serializer = self.serializer_class(data=self.request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
 
-        user = User.objects.get(
-            username=self.request.data['username'],
-            email=self.request.data['email'],
-            password=self.request.data['password'],
-            last_name=self.request.data['last_name'],
-            first_name=self.request.data['first_name'],
-        )
-        user.save()
+# class UserRegisterView(generics.GenericAPIView):
+#     """
+#     Регистрация нового пользователя.
+#     """
+#     serializer_class = UserSerializer
 
-        return Response({
-            "username": self.request.data['username'],
-            "email": self.request.data['email'],
-        })
+#     def post(self, serializer):
+#         serializer = self.serializer_class(data=self.request.data)
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+
+#         user = User.objects.get(
+#             username=self.request.data['username'],
+#             email=self.request.data['email'],
+#             password=self.request.data['password'],
+#             last_name=self.request.data['last_name'],
+#             first_name=self.request.data['first_name'],
+#         )
+#         user.save()
+
+#         return Response({
+#             "username": self.request.data['username'],
+#             "email": self.request.data['email'],
+#         })
 
 
 class UserGetTokenView(generics.GenericAPIView):
@@ -108,3 +145,49 @@ class UserGetTokenView(generics.GenericAPIView):
 
         refresh = RefreshToken.for_user(user)
         return Response(str(refresh.access_token))
+
+
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    # queryset = Subscription.objects.all()
+    # serializer_class = SubscriptionSerializer
+    queryset = User.objects.all()
+    serializer_class = SubscriptionSerializer
+
+    # def get_queryset(self):
+    #     author = get_object_or_404(User, pk=self.kwargs.get('user_id'))
+    #     return author
+
+    # def create(self,  serializer):
+    #     user = self.request.user.id
+    #     print('AAAAAA', *args)
+    #     # author = get_object_or_404(User, id=pk)
+    #     author = self.get_queryset()
+    #     serializer = self.serializer_class(user=user, author=author)
+    #     serializer.is_valid(raise_exception=True)
+    #     serializer.save()
+
+    #     subscription = Subscription.objects.get(
+    #         user=user, author=author
+    #     )
+    #     subscription.save()
+    #     return Response({author})
+
+    # def destroy(self, request, pk):
+    #     user = self.get_object(pk)
+    #     user.delete()
+    #     return Response({"a": "aa"})
+
+
+    # permission_classes = (IsAdminOrReadOnlyPermission,)
+    # lookup_field = 'slug'
+    # pagination_class = PageNumberPagination
+    # filter_backends = (filters.SearchFilter,)
+    # search_fields = ('username',)
+
+    # def get_object(self):
+    #     queryset = self.get_queryset()
+    #     obj = get_object_or_404(
+    #         queryset,
+    #         id=self.kwargs[self.lookup_field]
+    #     )
+    #     return obj

@@ -41,11 +41,13 @@ class Recipy(models.Model):
     )
     ingredients = models.ManyToManyField(
         Ingredient,
-        # through='IngredientsToRecipe',
-        # through_fields=('recipy', 'ingredient')
+        through='IngredientsToRecipe',
     )
 
     filter_horizontal = ('tag')
+
+    def __str__(self):
+        return self.name
 
 
 class IngredientsToRecipe(models.Model):

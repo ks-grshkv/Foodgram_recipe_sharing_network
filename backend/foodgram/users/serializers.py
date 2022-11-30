@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 
-from .models import User
+from .models import User, Subscription
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -17,6 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = (
+            'id',
             'username',
             'password',
             'email',
@@ -67,3 +68,21 @@ class GetTokenSerializer(serializers.ModelSerializer):
         ):
             raise serializers.ValidationError('Отправьте не пустой email')
         return data
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        fields = '__all__'
+        model = Subscription
+
+    def get_is_subscribed(self, instance):
+        request = self.context.get('request')
+        user = self.context['request'.user]
+        return (not (request is None)
+                and (instance.author.filter(user=user).exists()))
+    

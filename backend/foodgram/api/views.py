@@ -16,7 +16,7 @@ class RecipyViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrReadOnlyPermission,)
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('author',)
+    search_fields = ('author', 'tags',)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
