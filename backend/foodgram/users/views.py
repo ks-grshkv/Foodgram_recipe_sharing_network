@@ -50,10 +50,6 @@ class UserViewSet(viewsets.ModelViewSet):
             "email": self.request.data['email'],
         })
 
-    # def list(self, request):
-    #     queryset = self.get_queryset()
-    #     return Response(queryset)
-
     @action(
         detail=False,
         methods=['get', 'patch'],
@@ -88,38 +84,8 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def subscriptions(self, request, pk=None):
         user = get_object_or_404(User, id=self.request.user.id)
-
-        subscriptions = user.following.all()
-        subscriptions = Subscription.objects.filter(user=user.id)
-        author = user.following.all()
-        print(user, subscriptions, author)
-        return Response(author)
-
-
-# class UserRegisterView(generics.GenericAPIView):
-#     """
-#     Регистрация нового пользователя.
-#     """
-#     serializer_class = UserSerializer
-
-#     def post(self, serializer):
-#         serializer = self.serializer_class(data=self.request.data)
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save()
-
-#         user = User.objects.get(
-#             username=self.request.data['username'],
-#             email=self.request.data['email'],
-#             password=self.request.data['password'],
-#             last_name=self.request.data['last_name'],
-#             first_name=self.request.data['first_name'],
-#         )
-#         user.save()
-
-#         return Response({
-#             "username": self.request.data['username'],
-#             "email": self.request.data['email'],
-#         })
+        serializer = self.serializer_class(user.followers.all(), many=True)
+        return Response(serializer.data)
 
 
 class UserGetTokenView(generics.GenericAPIView):
@@ -148,10 +114,46 @@ class UserGetTokenView(generics.GenericAPIView):
 
 
 class SubscriptionViewSet(viewsets.ModelViewSet):
-    # queryset = Subscription.objects.all()
-    # serializer_class = SubscriptionSerializer
     queryset = User.objects.all()
     serializer_class = SubscriptionSerializer
+
+    def perform_create(self, serializer):
+        author = get_object_or_404(User, id=self.kwargs.get('author_id'))
+        serializer.save(user=self.request.user, author=author)
+        # subscription = Subscription(user=user, author=author)
+        # serializer = self.serializer_class(data=self.request.data)
+        # serializer.author = self.kwargs.get('author_id')
+        # serializer.is_valid(raise_exception=True)
+        # subscription.save()
+        # serializer.save()
+
+        return Response({
+            "email": author.email,
+            "id": author.pk,
+            "username": author.username,
+            "first_name": author.first_name,
+            "last_name": author.last_name,
+        })
+
+    @action(
+        detail=False,
+        methods=['delete'],
+        url_path='',
+        permission_classes=(IsAuth, )
+    )
+    def dele(self):
+        author = get_object_or_404(User, id=self.kwargs.get('author_id'))
+        subscription = get_object_or_404(
+            Subscription,
+            user=self.request.user,
+            author=author
+        )
+        subscription.delete()
+        return Response(203)
+
+
+
+    
 
     # def get_queryset(self):
     #     author = get_object_or_404(User, pk=self.kwargs.get('user_id'))

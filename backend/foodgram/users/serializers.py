@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 
@@ -19,7 +20,6 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'username',
-            'password',
             'email',
             'first_name',
             'last_name',
@@ -71,7 +71,9 @@ class GetTokenSerializer(serializers.ModelSerializer):
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
-
+    # user = 'asdasdsad'
+    # user = serializers.SlugRelatedField(slug_field='id', read_only='True')
+    # author = serializers.SlugRelatedField(slug_field='id', read_only='True')
     is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
@@ -80,9 +82,17 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = Subscription
 
+    def get_recipes(self, kwargs):
+        pass
+
+    def get_recipes_count(self, instance):
+        pass
+
     def get_is_subscribed(self, instance):
-        request = self.context.get('request')
-        user = self.context['request'.user]
-        return (not (request is None)
-                and (instance.author.filter(user=user).exists()))
+        return False
+        # request = self.context.get('request')
+        # user = self.context['request'].user
+        # return False
+        # return (not (request is None)
+        #         and (instance.author.filter(user=user).exists()))
     

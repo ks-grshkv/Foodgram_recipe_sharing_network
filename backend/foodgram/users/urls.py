@@ -15,9 +15,9 @@ router.register(
 #     basename='subscriptions',
 # )
 router.register(
-    'users/(?P<user_pk>\\d+)/subscribe',
+    'users/(?P<author_id>\\d+)/subscribe',
     SubscriptionViewSet,
-    basename='reviews'
+    basename='subscriptions'
 )
 
 urlpatterns = [
