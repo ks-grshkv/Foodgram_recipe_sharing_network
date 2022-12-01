@@ -77,6 +77,33 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(
+        detail=True,
+        methods=['post', 'delete'],
+        url_path='subscribe')
+    def subscribe(self, *args, **kwargs):
+        print('ENTER SUBSCRIBE', kwargs)
+        author = get_object_or_404(User, id=self.kwargs.get('id'))
+        print(author)
+        if self.request.method == 'POST':
+            print('POST')
+            serializer = SubscriptionSerializer(data=self.request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(
+                user=self.request.user,
+                author=author
+            )
+            return Response(serializer.data)
+
+        elif self.request.method == 'DELETE':
+            subscription = get_object_or_404(
+                Subscription,
+                user=self.request.user,
+                author=author
+            )
+            subscription.delete()
+            return Response(status=HTTPStatus.NO_CONTENT)
+
+    @action(
         detail=False,
         methods=['get'],
         url_path='subscriptions',
@@ -113,83 +140,41 @@ class UserGetTokenView(generics.GenericAPIView):
         return Response(str(refresh.access_token))
 
 
-class SubscriptionViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = SubscriptionSerializer
+# class SubscriptionViewSet(viewsets.ModelViewSet):
+#     queryset = User.objects.all()
+#     serializer_class = SubscriptionSerializer
 
-    def perform_create(self, serializer):
-        author = get_object_or_404(User, id=self.kwargs.get('author_id'))
-        serializer.save(user=self.request.user, author=author)
-        # subscription = Subscription(user=user, author=author)
-        # serializer = self.serializer_class(data=self.request.data)
-        # serializer.author = self.kwargs.get('author_id')
-        # serializer.is_valid(raise_exception=True)
-        # subscription.save()
-        # serializer.save()
+#     def perform_create(self, serializer):
+#         author = get_object_or_404(User, id=self.kwargs.get('author_id'))
+#         serializer.save(user=self.request.user, author=author)
+#         # subscription = Subscription(user=user, author=author)
+#         # serializer = self.serializer_class(data=self.request.data)
+#         # serializer.author = self.kwargs.get('author_id')
+#         # serializer.is_valid(raise_exception=True)
+#         # subscription.save()
+#         # serializer.save()
 
-        return Response({
-            "email": author.email,
-            "id": author.pk,
-            "username": author.username,
-            "first_name": author.first_name,
-            "last_name": author.last_name,
-        })
+#         return Response({
+#             "email": author.email,
+#             "id": author.pk,
+#             "username": author.username,
+#             "first_name": author.first_name,
+#             "last_name": author.last_name,
+#         })
 
-    @action(
-        detail=False,
-        methods=['delete'],
-        url_path='',
-        permission_classes=(IsAuth, )
-    )
-    def dele(self):
-        author = get_object_or_404(User, id=self.kwargs.get('author_id'))
-        subscription = get_object_or_404(
-            Subscription,
-            user=self.request.user,
-            author=author
-        )
-        subscription.delete()
-        return Response(203)
+#     @action(
+#         detail=False,
+#         methods=['delete'],
+#         url_path='',
+#         permission_classes=(IsAuth, )
+#     )
+#     def dele(self):
+#         author = get_object_or_404(User, id=self.kwargs.get('author_id'))
+#         subscription = get_object_or_404(
+#             Subscription,
+#             user=self.request.user,
+#             author=author
+#         )
+#         subscription.delete()
+#         return Response(203)
 
-
-
-    
-
-    # def get_queryset(self):
-    #     author = get_object_or_404(User, pk=self.kwargs.get('user_id'))
-    #     return author
-
-    # def create(self,  serializer):
-    #     user = self.request.user.id
-    #     print('AAAAAA', *args)
-    #     # author = get_object_or_404(User, id=pk)
-    #     author = self.get_queryset()
-    #     serializer = self.serializer_class(user=user, author=author)
-    #     serializer.is_valid(raise_exception=True)
-    #     serializer.save()
-
-    #     subscription = Subscription.objects.get(
-    #         user=user, author=author
-    #     )
-    #     subscription.save()
-    #     return Response({author})
-
-    # def destroy(self, request, pk):
-    #     user = self.get_object(pk)
-    #     user.delete()
-    #     return Response({"a": "aa"})
-
-
-    # permission_classes = (IsAdminOrReadOnlyPermission,)
-    # lookup_field = 'slug'
-    # pagination_class = PageNumberPagination
-    # filter_backends = (filters.SearchFilter,)
-    # search_fields = ('username',)
-
-    # def get_object(self):
-    #     queryset = self.get_queryset()
-    #     obj = get_object_or_404(
-    #         queryset,
-    #         id=self.kwargs[self.lookup_field]
-    #     )
-    #     return obj

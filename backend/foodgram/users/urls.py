@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from .views import UserGetTokenView, UserViewSet, SubscriptionViewSet
+from .views import UserGetTokenView, UserViewSet
 from rest_framework.routers import SimpleRouter
 
 router = SimpleRouter()
@@ -14,11 +14,11 @@ router.register(
 #     SubscriptionViewSet,
 #     basename='subscriptions',
 # )
-router.register(
-    'users/(?P<author_id>\\d+)/subscribe',
-    SubscriptionViewSet,
-    basename='subscriptions'
-)
+# router.register(
+#     'users/(?P<author_id>\\d+)/subscribe',
+#     SubscriptionViewSet,
+#     basename='subscriptions'
+# )
 
 urlpatterns = [
     # path('users/subscriptions/', SubscriptionViewSet.as_view({'delete': 'destroy', 'post': 'create'}), name='subscribe'),

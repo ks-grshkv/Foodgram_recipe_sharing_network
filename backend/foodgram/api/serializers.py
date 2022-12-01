@@ -7,7 +7,7 @@ from rest_framework.relations import SlugRelatedField
 class TagSerializer(serializers.ModelSerializer):
 
     class Meta:
-        fields = '__all__'
+        fields = ('id', 'name', 'color', 'slug')
         model = Tag
 
 

@@ -10,16 +10,16 @@ class Tag(models.Model):
     slug = models.SlugField(unique=True, max_length=50)
     color = models.CharField(max_length=7, default="#ffffff")
 
-    def __str__(self):
-        return self.name
+    # def __str__(self):
+    #     return self.name
 
 
 class Ingredient(models.Model):
     name = models.CharField(max_length=256)
     unit = models.CharField(max_length=256)
 
-    def __str__(self):
-        return self.name
+    # def __str__(self):
+    #     return self.name
 
 
 class Recipy(models.Model):
