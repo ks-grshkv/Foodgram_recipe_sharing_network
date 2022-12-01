@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
-from .views import RecipyViewSet, TagViewSet, IngredientViewSet, ShoppingCartViewSet, FavoriteViewSet
+from .views import RecipyViewSet, TagViewSet, IngredientViewSet, ShoppingCartViewSet
 
 app_name = 'api'
 
@@ -26,11 +26,11 @@ router.register(
     ShoppingCartViewSet,
     basename='cart',
 )
-router.register(
-    'favorite',
-    FavoriteViewSet,
-    basename='favorite',
-)
+# router.register(
+#     'recipes/(?P<recipes_id>\\d+)/favorite',
+#     FavoriteViewSet,
+#     basename='favorite',
+# )
 
 urlpatterns = [
     path('/', include(router.urls)),

@@ -38,14 +38,14 @@ class RecipySerializer(serializers.ModelSerializer):
         model = Recipy
 
     def get_is_favorite(self, instance):
-        request = self.context.get('request')
+        # request = self.context.get('request')
         user = self.context['request'].user
-        return True
+        print(instance)
+        return Favorite.objects.filter(user=user, recipy=instance).exists()
     
     def get_is_in_shopping_cart(self, instance):
-        request = self.context.get('request')
         user = self.context['request'].user
-        return True
+        return ShoppingCart.objects.filter(user=user, recipy=instance).exists()
 
 
 class IngredientSerializer(serializers.ModelSerializer):

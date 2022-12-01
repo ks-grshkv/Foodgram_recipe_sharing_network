@@ -71,9 +71,9 @@ class GetTokenSerializer(serializers.ModelSerializer):
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
-    # user = 'asdasdsad'
-    # user = serializers.SlugRelatedField(slug_field='id', read_only='True')
-    # author = serializers.SlugRelatedField(slug_field='id', read_only='True')
+    user = 'asdasdsad'
+    user = serializers.SlugRelatedField(slug_field='id', read_only='True')
+    author = serializers.SlugRelatedField(slug_field='id', read_only='True')
     is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
@@ -81,6 +81,13 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = Subscription
+        
+        # validators = [
+        #     UniqueTogetherValidator(
+        #         queryset=Subscription.objects.all(),
+        #         fields=['author', 'user']
+        #     )
+        # ]
 
     def get_recipes(self, kwargs):
         pass
