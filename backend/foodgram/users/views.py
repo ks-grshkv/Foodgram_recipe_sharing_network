@@ -79,7 +79,8 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=['post', 'delete'],
-        url_path='subscribe')
+        url_path='subscribe',
+        serializer_class=SubscriptionSerializer)
     def subscribe(self, *args, **kwargs):
         print('ENTER SUBSCRIBE', kwargs)
         author = get_object_or_404(User, id=self.kwargs.get('id'))
@@ -87,7 +88,9 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.request.method == 'POST':
             print('POST')
             serializer = SubscriptionSerializer(data=self.request.data)
+            print('start validation', author, self.request.user)
             serializer.is_valid(raise_exception=True)
+            print('start save', author, self.request.user)
             serializer.save(
                 user=self.request.user,
                 author=author

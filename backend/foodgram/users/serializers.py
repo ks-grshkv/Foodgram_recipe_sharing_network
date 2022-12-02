@@ -85,7 +85,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = '__all__'
-        model = User
+        model = Subscription
         
         # validators = [
         #     UniqueTogetherValidator(
@@ -95,6 +95,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         # ]
 
     def get_is_subscribed(self, instance):
-        user = self.context['request'].user
-        return Subscription.objects.filter(user=user, author=instance).exists()
+        print('AAAAAAAAAAAA', self.context)
+        print(instance)
+        user = instance.user
+        return Subscription.objects.filter(user=user, author=instance.author).exists()
     

@@ -81,7 +81,6 @@ class RecipyViewSet(viewsets.ModelViewSet):
             )
             shopping_cart_item.delete()
             return Response(status=HTTPStatus.NO_CONTENT)
-    
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -103,14 +102,17 @@ class IngredientViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
 
+
 class PassthroughRenderer(renderers.BaseRenderer):
     """
     Return data as-is. View should supply a Response.
     """
     media_type = ''
     format = ''
+    
     def render(self, data, accepted_media_type=None, renderer_context=None):
         return data
+
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
     serializer_class = ShoppingCartSerializer
@@ -150,4 +152,5 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = get_object_or_404(User, username=self.request.user.username)
         return user.favorite.all()
+        #параша#
     
