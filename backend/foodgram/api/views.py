@@ -38,7 +38,10 @@ class RecipyViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         print('AAAAAAAAAA')
-        serializer.save(author=self.request.user)
+        print(serializer.data)
+        serializer.save()
+        print('Asdsdsdsdsdadsafsaf')
+
 
     @action(detail=True, methods=['post', 'delete'], url_path='favorite')
     def favorite(self, *args, **kwargs):

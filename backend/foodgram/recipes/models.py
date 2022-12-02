@@ -43,7 +43,7 @@ class Recipy(models.Model):
         Ingredient,
         through='IngredientsToRecipe',
     )
-    is_favorite = models.BooleanField()
+    # is_favorite = models.BooleanField()
 
     filter_horizontal = ('tag')
 
