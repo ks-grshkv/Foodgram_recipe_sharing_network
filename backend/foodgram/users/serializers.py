@@ -3,7 +3,6 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 
 from .models import User, Subscription
-from api.serializers import RecipySerializer
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -74,6 +73,15 @@ class GetTokenSerializer(serializers.ModelSerializer):
         ):
             raise serializers.ValidationError('Отправьте не пустой email')
         return data
+        
+
+class UpdatePasswordSerializer(serializers.ModelSerializer):
+    new_password = serializers.CharField()
+    current_password = serializers.CharField()
+    
+    class Meta:
+        fields = ('new_password', 'current_password')
+        model = User
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
@@ -95,7 +103,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         # ]
 
     def get_is_subscribed(self, instance):
-        print('AAAAAAAAAAAA', self.context)
         print(instance)
         user = instance.user
         return Subscription.objects.filter(user=user, author=instance.author).exists()

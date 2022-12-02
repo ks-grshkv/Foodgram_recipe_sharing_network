@@ -16,7 +16,7 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     name = models.CharField(max_length=256)
-    unit = models.CharField(max_length=256)
+    measurement_unit = models.CharField(max_length=256)
 
     # def __str__(self):
     #     return self.name
@@ -43,11 +43,16 @@ class Recipy(models.Model):
         Ingredient,
         through='IngredientsToRecipe',
     )
+    is_favorite = models.BooleanField()
 
     filter_horizontal = ('tag')
 
     def __str__(self):
         return self.name
+
+    # @property
+    # def is_favorite():
+    #     return False
 
 
 class IngredientsToRecipe(models.Model):

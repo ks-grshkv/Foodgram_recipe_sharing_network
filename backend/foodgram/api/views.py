@@ -5,7 +5,7 @@ from http import HTTPStatus
 from users.models import User
 
 from .permissions import IsAuthorOrReadOnlyPermission
-from .serializers import RecipySerializer, TagSerializer, IngredientSerializer, FavoriteSerializer, ShoppingCartSerializer
+from .serializers import RecipyReadSerializer, RecipyWriteSerializer, TagSerializer, IngredientSerializer, FavoriteSerializer, ShoppingCartSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
@@ -13,6 +13,7 @@ from rest_framework import filters, permissions, viewsets, renderers
 from rest_framework.pagination import PageNumberPagination
 from .mixins import ListCreateDestroyViewset
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class RecipyViewSet(viewsets.ModelViewSet):
@@ -23,13 +24,20 @@ class RecipyViewSet(viewsets.ModelViewSet):
     рецептов в список избранного и в список покупок.
     """
     queryset = Recipy.objects.all()
-    serializer_class = RecipySerializer
     permission_classes = (IsAuthorOrReadOnlyPermission,)
     pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('author', 'tags',)
+    # filter_backends = (filters.SearchFilter,)
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['author', 'tags', 'is_favorite']
+    # search_fields = ('author', 'tags',)
+
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return RecipyReadSerializer
+        return RecipyWriteSerializer
 
     def perform_create(self, serializer):
+        print('AAAAAAAAAA')
         serializer.save(author=self.request.user)
 
     @action(detail=True, methods=['post', 'delete'], url_path='favorite')
@@ -88,9 +96,9 @@ class TagViewSet(viewsets.ModelViewSet):
     serializer_class = TagSerializer
     # permission_classes = (IsAdminOrReadOnlyPermission,)
     # lookup_field = 'slug'
-    pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    pagination_class = None
+    # filter_backends = (filters.SearchFilter,)
+    # search_fields = ('name',)
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
@@ -98,7 +106,7 @@ class IngredientViewSet(viewsets.ModelViewSet):
     serializer_class = IngredientSerializer
     # permission_classes = (IsAdminOrReadOnlyPermission,)
     # lookup_field = 'slug'
-    pagination_class = PageNumberPagination
+    pagination_class = None
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
 
@@ -109,7 +117,7 @@ class PassthroughRenderer(renderers.BaseRenderer):
     """
     media_type = ''
     format = ''
-    
+
     def render(self, data, accepted_media_type=None, renderer_context=None):
         return data
 
@@ -121,8 +129,9 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
     # pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('user',)
+    queryset = ShoppingCart.objects.all()
 
-    def get_queryset(self):
+    def get_object(self):
         cart = get_object_or_404(ShoppingCart, user_id=self.request.user.id)
         return cart
 
@@ -152,5 +161,5 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = get_object_or_404(User, username=self.request.user.username)
         return user.favorite.all()
-        #параша#
+        # параша
     

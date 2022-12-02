@@ -26,11 +26,11 @@ router.register(
     ShoppingCartViewSet,
     basename='cart',
 )
-# router.register(
-#     'favorite',
-#     FavoriteViewSet,
-#     basename='favorite',
-# )
+router.register(
+    'favorite',
+    FavoriteViewSet,
+    basename='favorite',
+)
 
 urlpatterns = [
     path('/', include(router.urls)),

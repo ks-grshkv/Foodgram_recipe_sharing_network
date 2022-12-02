@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User, Subscription
 from .permissions import IsAdminOrSuper, IsAuth
-from .serializers import GetTokenSerializer, UserSerializer, SubscriptionSerializer
+from .serializers import GetTokenSerializer, UserSerializer, SubscriptionSerializer, UpdatePasswordSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -35,9 +35,9 @@ class UserViewSet(viewsets.ModelViewSet):
     def create(self, serializer):
         serializer = self.serializer_class(data=self.request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        # serializer.save()
 
-        user = User.objects.get(
+        user = User(
             username=self.request.data['username'],
             email=self.request.data['email'],
             password=self.request.data['password'],
@@ -110,12 +110,29 @@ class UserViewSet(viewsets.ModelViewSet):
         detail=False,
         methods=['get'],
         url_path='subscriptions',
-        permission_classes=(IsAuth, )
+        permission_classes=(IsAuth, ),
+        serializer_class=UpdatePasswordSerializer
     )
     def subscriptions(self, request, pk=None):
         user = get_object_or_404(User, id=self.request.user.id)
         serializer = self.serializer_class(user.followers.all(), many=True)
         return Response(serializer.data)
+
+    @action(
+        detail=False,
+        methods=['POST'],
+        url_path='set_password',
+        permission_classes=(IsAuth, )
+    )
+    def set_password(self, request, pk=None):
+        user = get_object_or_404(User, id=self.request.user.id)
+        new_password = self.request.data['new_password']
+        current_password = self.request.data['current_password']
+        if current_password != user.password:
+            return Response(status=HTTPStatus.BAD_REQUEST)
+        user.password = new_password
+        user.save()
+        return Response(status=HTTPStatus.OK)
 
 
 class UserGetTokenView(generics.GenericAPIView):
@@ -138,9 +155,25 @@ class UserGetTokenView(generics.GenericAPIView):
 
         if user.password != password:
             return Response(status=HTTPStatus.BAD_REQUEST)
-
+        # serializer.save()
         refresh = RefreshToken.for_user(user)
         return Response(str(refresh.access_token))
+
+
+class UserDeleteTokenView(generics.GenericAPIView):
+    """
+    Удаление токена
+    """
+    serializer_class = GetTokenSerializer
+
+    def post(self, request):
+        user = get_object_or_404(
+            User,
+            id=self.request.user.id,
+        )
+        refresh = RefreshToken.for_user(user)
+        # user.delete()
+        return Response(status=HTTPStatus.NO_CONTENT)
 
 
 # class SubscriptionViewSet(viewsets.ModelViewSet):
