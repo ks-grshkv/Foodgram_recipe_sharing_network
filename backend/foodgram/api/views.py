@@ -4,7 +4,7 @@ from rest_framework import viewsets
 from http import HTTPStatus
 from users.models import User
 
-from .permissions import IsAuthorOrReadOnlyPermission
+from .permissions import IsAuthorOrReadOnlyPermission, OwnerAdmin
 from .serializers import RecipyReadSerializer, RecipyWriteSerializer, TagSerializer, IngredientSerializer, FavoriteSerializer, ShoppingCartSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
@@ -24,11 +24,11 @@ class RecipyViewSet(viewsets.ModelViewSet):
     рецептов в список избранного и в список покупок.
     """
     queryset = Recipy.objects.all()
-    permission_classes = (IsAuthorOrReadOnlyPermission,)
+    permission_classes = (OwnerAdmin, )
     pagination_class = PageNumberPagination
     # filter_backends = (filters.SearchFilter,)
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['author', 'tags', 'is_favorite']
+    filterset_fields = ['author', 'tags', ]
     # search_fields = ('author', 'tags',)
 
     def get_serializer_class(self):
@@ -37,10 +37,15 @@ class RecipyViewSet(viewsets.ModelViewSet):
         return RecipyWriteSerializer
 
     def perform_create(self, serializer):
-        print('AAAAAAAAAA')
-        print(serializer.data)
         serializer.save()
-        print('Asdsdsdsdsdadsafsaf')
+        return Response(serializer.data)
+
+    # def perform_delete(self, serializer):
+    #     recipy = get_object_or_404(Recipy, id=self.kwargs.get('pk'))
+    #     recipy.delete()
+    #     return Response(status=HTTPStatus.NO_CONTENT)
+        
+
 
 
     @action(detail=True, methods=['post', 'delete'], url_path='favorite')

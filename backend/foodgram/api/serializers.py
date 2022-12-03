@@ -1,6 +1,7 @@
 from recipes.models import Recipy, Tag, Ingredient, ShoppingCart, Favorite, IngredientsToRecipe
 from users.models import User
 from users.serializers import UserSerializer
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField, PrimaryKeyRelatedField
 
@@ -101,7 +102,6 @@ class IngredientsToRecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipyReadSerializer(serializers.ModelSerializer):
-    # author = UserSerializer()
     author = serializers.SerializerMethodField()
     ingredients = IngredientsToRecipeSerializer(
         many=True,
@@ -159,37 +159,73 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
 
     def get_is_favorite(self, instance):
         # тут какая-то параша
-        print('ENTER get_is_favorite')
-        user = self.context['request'].user
-        return Favorite.objects.filter(user=user, recipy=instance).exists()
+        # print('ENTER get_is_favorite')
+        # print(instance)
+        # user = self.context['request'].user
+        # recipy = Recipy.objects.get(id=instance.id)
+        return False
     
     def get_author(self, *args):
-        print('ENTER get_author')
-        user = self.context['request'].user
-        return user
+        # print('ENTER get_author')
+        # user = self.context['request'].user
+        # return user
+        serializer = UserSerializer(self.context['request'].user)
+        print('AAAA', serializer.data)
+        # удалить ненужное говно, сделать is_subscribed
+        return serializer.data
 
     def get_is_in_shopping_cart(self, instance):
-        print('ENTER get_is_in_shopping_cart')
-        user = self.context['request'].user
-        return ShoppingCart.objects.filter(user=user, recipy=instance).exists()
+        return False
+        # print('ENTER get_is_in_shopping_cart')
+        # user = self.context['request'].user
+        # return ShoppingCart.objects.filter(user=user, recipy=instance).exists()
 
     def create_ingredients(self, ingredients, recipy):
         print('create_ingredients')
+        IngredientsToRecipe.objects.filter(recipy=recipy).delete()
         for ingredient in ingredients:
             IngredientsToRecipe.objects.create(
                 recipy=recipy, ingredient=ingredient['id'],
                 amount=ingredient['amount']
         )
+        print('FINISHED INGREDIENTS')
 
     def create_tags(self, tags, recipy):
         print('create_tags')
+        current_tags = recipy.tags.all()
+        for current_tag in current_tags:
+            recipy.tags.remove(current_tag)
         for tag in tags:
             recipy.tags.add(tag)
+        print('FINISHED TAGS')
+    
+    def update(self, instance, validated_data):
+        tags_data = validated_data.pop('tags')
+        print('||||||||||||||||', validated_data)
+        name = validated_data.get('name')
+        image = validated_data.get('image')
+        text = validated_data.get('text')
+        cooking_time = validated_data.get('cooking_time')
+        ingredients = validated_data.pop('recipy_with_ingredients')
+        print('CREATE RECIPY')
+        recipy = get_object_or_404(Recipy, id=instance.id)
+        r2 = get_object_or_404(Recipy, id=instance.id)
+        recipy.name = name
+        print('NAME', name)
+        recipy.image = image
+        # print('NAME', image)
+        recipy.text = text
+        print('TEXT', text)
+        recipy.cooking_time = cooking_time
+        # recipy.save
+        print('TEXT', cooking_time)
+        self.create_tags(tags_data, recipy)
+        print('CREATE TAGS DONE')
+        self.create_ingredients(ingredients, recipy)
+        recipy.save()
+        return recipy
     
     def create(self, validated_data):
-        print('ENTER create')
-        author = self.get_author()
-        print('AAAAAAAAAA', validated_data)
         tags_data = validated_data.pop('tags')
         print(tags_data)
         name = validated_data.get('name')
@@ -199,7 +235,7 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
         ingredients = validated_data.pop('recipy_with_ingredients')
         print('CREATE RECIPY')
         recipy = Recipy.objects.create(
-            author=author,
+            author=self.context['request'].user,
             name=name,
             image=image,
             text=text,
