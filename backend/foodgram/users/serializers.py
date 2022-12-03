@@ -15,8 +15,9 @@ class UserSerializer(serializers.ModelSerializer):
         validators=[UniqueValidator(queryset=User.objects.all())],
         required=True
     )
-    recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField()
+    # recipes = serializers.SerializerMethodField()
+    # recipes_count = serializers.SerializerMethodField()
 
     class Meta:
         fields = (
@@ -25,19 +26,29 @@ class UserSerializer(serializers.ModelSerializer):
             'email',
             'first_name',
             'last_name',
-            'role',
-            'recipes_count',
-            'recipes'
+            # 'role',
+            # 'recipes_count',
+            # 'recipes',
+            'is_subscribed'
         )
         model = User
+
+    def get_is_subscribed(self, instance):
+        try:
+            user = self.context['request'].user
+            return Subscription.objects.filter(user=user, author=instance).exists()
+        except KeyError:
+            return False
+
     
-    def get_recipes(self, instance):
+    # def get_recipes(self, instance):
         # serializer = RecipySerializer(instance.recipes.all())
         # return serializer.data
-        return True
+        # return True
 
-    def get_recipes_count(self, instance):
-        return instance.recipes.count()
+    # def get_recipes_count(self, instance):
+    #     return instance.recipes.count()
+
 
     def validate_username(self, value):
         """

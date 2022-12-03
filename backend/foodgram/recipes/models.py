@@ -50,9 +50,9 @@ class Recipy(models.Model):
     def __str__(self):
         return self.name
 
-    # @property
-    # def is_favorite():
-    #     return False
+    @property
+    def is_favorite():
+        return False
 
 
 class IngredientsToRecipe(models.Model):

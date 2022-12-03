@@ -158,27 +158,15 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
         model = Recipy
 
     def get_is_favorite(self, instance):
-        # тут какая-то параша
-        # print('ENTER get_is_favorite')
-        # print(instance)
-        # user = self.context['request'].user
-        # recipy = Recipy.objects.get(id=instance.id)
         return False
     
     def get_author(self, *args):
-        # print('ENTER get_author')
-        # user = self.context['request'].user
-        # return user
         serializer = UserSerializer(self.context['request'].user)
         print('AAAA', serializer.data)
-        # удалить ненужное говно, сделать is_subscribed
         return serializer.data
 
     def get_is_in_shopping_cart(self, instance):
         return False
-        # print('ENTER get_is_in_shopping_cart')
-        # user = self.context['request'].user
-        # return ShoppingCart.objects.filter(user=user, recipy=instance).exists()
 
     def create_ingredients(self, ingredients, recipy):
         print('create_ingredients')

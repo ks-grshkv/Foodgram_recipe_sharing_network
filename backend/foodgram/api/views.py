@@ -40,13 +40,6 @@ class RecipyViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data)
 
-    # def perform_delete(self, serializer):
-    #     recipy = get_object_or_404(Recipy, id=self.kwargs.get('pk'))
-    #     recipy.delete()
-    #     return Response(status=HTTPStatus.NO_CONTENT)
-        
-
-
 
     @action(detail=True, methods=['post', 'delete'], url_path='favorite')
     def favorite(self, *args, **kwargs):
