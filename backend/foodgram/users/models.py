@@ -51,6 +51,11 @@ class User(AbstractUser):
     def is_user(self):
         return self.role == Roles.user.name
 
+    class Meta:
+        ordering = ('-username',)
+        verbose_name = 'Пользователи'
+        verbose_name_plural = verbose_name
+
 
 class Subscription(models.Model):
     author = models.ForeignKey(
@@ -69,3 +74,9 @@ class Subscription(models.Model):
         null=True,
         verbose_name='Пользователь'
     )
+
+    class Meta:
+        ordering = ('-user',)
+        verbose_name = 'Подписки'
+        verbose_name_plural = verbose_name
+

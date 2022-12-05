@@ -9,15 +9,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User, Subscription
 from .permissions import IsAdminOrSuper, IsAuth
-from .serializers import GetTokenSerializer, UserSerializer, SubscriptionSerializer, UpdatePasswordSerializer
+from .serializers import GetTokenSerializer, UserSerializer, SubscriptionSerializer, UpdatePasswordSerializer, UserWithRecipesSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
     """
     Эндпоинт users/
-    Используется админами и суперпользователями.
-    Исключение: users/me могут использовать авторизованные
-    пользователи для просмотра и изменения своего профиля.
     """
     serializer_class = UserSerializer
     queryset = User.objects.all()
@@ -111,18 +108,19 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=['get'],
         url_path='subscriptions',
         permission_classes=(IsAuth, ),
-        serializer_class=UpdatePasswordSerializer
+        serializer_class=UserWithRecipesSerializer
     )
     def subscriptions(self, request, pk=None):
-        user = get_object_or_404(User, id=self.request.user.id)
-        serializer = self.serializer_class(user.followers.all(), many=True)
+        subscriptions = Subscription.objects.filter(user=self.request.user)
+        serializer = self.serializer_class(subscriptions, many=True)
         return Response(serializer.data)
 
     @action(
         detail=False,
         methods=['POST'],
         url_path='set_password',
-        permission_classes=(IsAuth, )
+        permission_classes=(IsAuth, ),
+        serializer_class=UpdatePasswordSerializer
     )
     def set_password(self, request, pk=None):
         user = get_object_or_404(User, id=self.request.user.id)
@@ -174,43 +172,3 @@ class UserDeleteTokenView(generics.GenericAPIView):
         refresh = RefreshToken.for_user(user)
         # user.delete()
         return Response(status=HTTPStatus.NO_CONTENT)
-
-
-# class SubscriptionViewSet(viewsets.ModelViewSet):
-#     queryset = User.objects.all()
-#     serializer_class = SubscriptionSerializer
-
-#     def perform_create(self, serializer):
-#         author = get_object_or_404(User, id=self.kwargs.get('author_id'))
-#         serializer.save(user=self.request.user, author=author)
-#         # subscription = Subscription(user=user, author=author)
-#         # serializer = self.serializer_class(data=self.request.data)
-#         # serializer.author = self.kwargs.get('author_id')
-#         # serializer.is_valid(raise_exception=True)
-#         # subscription.save()
-#         # serializer.save()
-
-#         return Response({
-#             "email": author.email,
-#             "id": author.pk,
-#             "username": author.username,
-#             "first_name": author.first_name,
-#             "last_name": author.last_name,
-#         })
-
-#     @action(
-#         detail=False,
-#         methods=['delete'],
-#         url_path='',
-#         permission_classes=(IsAuth, )
-#     )
-#     def dele(self):
-#         author = get_object_or_404(User, id=self.kwargs.get('author_id'))
-#         subscription = get_object_or_404(
-#             Subscription,
-#             user=self.request.user,
-#             author=author
-#         )
-#         subscription.delete()
-#         return Response(203)
-

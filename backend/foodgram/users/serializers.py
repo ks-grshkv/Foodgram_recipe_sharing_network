@@ -42,26 +42,6 @@ class UserSerializer(serializers.ModelSerializer):
         except KeyError:
             return False
 
-    
-    # def get_recipes(self, instance):
-        # serializer = RecipySerializer(instance.recipes.all())
-        # return serializer.data
-        # return True
-
-    # def get_recipes_count(self, instance):
-    #     return instance.recipes.count()
-
-
-    # def validate_username(self, value):
-    #     """
-    #     Проверяем, что нельзя сделать юзернейм 'me'
-    #     """
-    #     if value == 'me':
-    #         raise serializers.ValidationError('Задайте другой юзернейм')
-    #     if value is None:
-    #         raise serializers.ValidationError('Задайте не пустой юзернейм')
-    #     return value
-
 
 class GetTokenSerializer(serializers.ModelSerializer):
     email = serializers.CharField(
@@ -104,7 +84,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     # recipes = serializers.SerializerMethodField()
     # recipes_count = serializers.SerializerMethodField()
 
-
     class Meta:
         fields = '__all__'
         model = Subscription
@@ -119,5 +98,56 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, instance):
         print(instance)
         user = instance.user
+        # user = self.context['request'].user
+        if user.is_anonymous:
+            return False
+        print('AAAAAAA|||||', user, instance)
         return Subscription.objects.filter(user=user, author=instance.author).exists()
+
+
+class UserWithRecipesSerializer(serializers.ModelSerializer):
+    # recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField()
+    id = serializers.SerializerMethodField()
+    username = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
+
+    class Meta:
+        fields = (
+            'id',
+            'username',
+            'email',
+            # 'first_name',
+            # 'last_name',
+            # 'role',
+            'recipes_count',
+            # 'recipes',
+            'is_subscribed'
+        )
+        model = Subscription
+
+    # def get_recipes(self, instance):
+    #     serializer = instance.recipes.all()
+    #     return serializer
+
+    def get_id(self, instance):
+        return instance.author.id
     
+    def get_username(self, instance):
+        return instance.author.username
+
+    def get_recipes_count(self, instance):
+        return instance.author.recipes.count()
+
+    def get_email(self, instance):
+        return instance.author.email
+
+    def get_is_subscribed(self, instance):
+        print(instance)
+        user = instance.user
+        # user = self.context['request'].user
+        if user.is_anonymous:
+            return False
+        print('AAAAAAA|||||', user, instance)
+        return Subscription.objects.filter(user=user, author=instance.author).exists()

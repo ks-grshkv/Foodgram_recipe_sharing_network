@@ -1,7 +1,6 @@
-from recipes.models import Recipy, Tag, Ingredient, ShoppingCart, Favorite, IngredientsToRecipe
-from users.models import User
+from recipes.models import Recipy, Tag, Ingredient, ShoppingCart, Favorite, IngredientsToRecipe, ShoppingCartItem
 from users.serializers import UserSerializer
-import uuid
+from users.models import Subscription
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField, PrimaryKeyRelatedField
@@ -64,7 +63,7 @@ class Base64ImageField(serializers.ImageField):
         extension = "jpg" if extension == "jpeg" else extension
 
         return extension
-        
+
 
 class TagSerializer(serializers.ModelSerializer):
 
@@ -80,11 +79,30 @@ class IngredientSerializer(serializers.ModelSerializer):
         model = Ingredient
         # exclude = ('id',)
 
+class IngredientsToRecipeReadSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    id = serializers.SerializerMethodField()
+    measurement_unit = serializers.SerializerMethodField()
 
+    class Meta:
+        fields = ('id', 'amount', 'name', 'measurement_unit')
+        model = IngredientsToRecipe
+
+    def get_id(self, instance):
+        return instance.ingredient.id
+
+    def get_measurement_unit(self, instance):
+        ingredient = Ingredient.objects.get(id=instance.ingredient_id)
+        return ingredient.measurement_unit
+
+    def get_name(self, instance):
+        ingredient = Ingredient.objects.get(id=instance.ingredient_id)
+        return ingredient.name
+
+    
 class IngredientsToRecipeSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     measurement_unit = serializers.SerializerMethodField()
-    # id = serializers.SerializerMethodField()
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
 
     class Meta:
@@ -105,7 +123,7 @@ class IngredientsToRecipeSerializer(serializers.ModelSerializer):
 
 class RecipyReadSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
-    ingredients = IngredientsToRecipeSerializer(
+    ingredients = IngredientsToRecipeReadSerializer(
         many=True,
         source='recipy_with_ingredients'
     )
@@ -125,9 +143,19 @@ class RecipyReadSerializer(serializers.ModelSerializer):
         model = Recipy
 
     def get_author(self, instance):
+        print('AAAAAAAAAAAA', self.context['request'].user, instance.author)
         serializer = UserSerializer(instance.author)
-        print('AAAA', serializer.data)
-        # удалить ненужное говно, сделать is_subscribed
+        # print(Subscription.objects.filter(user=self.context['request'].user, author=instance.author).exists())
+        # serializer = UserSerializer(
+        #     instance.author,
+        #     data={'is_subscribed': Subscription.objects.filter(user=self.context['request'].user, author=instance.author).exists()},
+        #     partial=True
+        # )
+        # serializer.is_valid()
+        # serializer.update(
+        #     is_subscribed=Subscription.objects.filter(user=self.context['request'].user, author=instance.author).exists(),
+        #     partial=True)
+        
         return serializer.data
 
     def get_is_favorite(self, instance):
@@ -146,10 +174,6 @@ class RecipyReadSerializer(serializers.ModelSerializer):
 
 class RecipyWriteSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
-    # ingredients = AddIngredientSerializer(
-    #     many=True,
-    #     source='recipy_with_ingredients'
-    # )
     ingredients = IngredientsToRecipeSerializer(
         many=True,
         source='recipy_with_ingredients'
@@ -180,59 +204,47 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
         return False
 
     def create_ingredients(self, ingredients, recipy):
-        print('create_ingredients')
+        print('AAAA UPDAE3')
         IngredientsToRecipe.objects.filter(recipy=recipy).delete()
         for ingredient in ingredients:
             IngredientsToRecipe.objects.create(
                 recipy=recipy, ingredient=ingredient['id'],
                 amount=ingredient['amount']
-        )
-        print('FINISHED INGREDIENTS')
+            )
 
     def create_tags(self, tags, recipy):
-        print('create_tags')
+        print('AAAA UPDAE2')
         current_tags = recipy.tags.all()
         for current_tag in current_tags:
             recipy.tags.remove(current_tag)
         for tag in tags:
             recipy.tags.add(tag)
-        print('FINISHED TAGS', recipy.tags.all())
     
     def update(self, instance, validated_data):
+        print('AAAA UPDAE')
         tags_data = validated_data.pop('tags')
-        print('||||||||||||||||', validated_data)
         name = validated_data.get('name')
         image = validated_data.get('image')
         text = validated_data.get('text')
         cooking_time = validated_data.get('cooking_time')
         ingredients = validated_data.pop('recipy_with_ingredients')
-        print('CREATE RECIPY')
         recipy = get_object_or_404(Recipy, id=instance.id)
-        r2 = get_object_or_404(Recipy, id=instance.id)
         recipy.name = name
-        print('NAME', name)
         recipy.image = image
-        # print('NAME', image)
         recipy.text = text
-        print('TEXT', text)
         recipy.cooking_time = cooking_time
-        # recipy.save
-        print('TEXT', cooking_time)
         self.create_tags(tags_data, recipy)
-        print('CREATE TAGS DONE')
         self.create_ingredients(ingredients, recipy)
         recipy.save()
         return recipy
     
     def create(self, validated_data):
         tags_data = validated_data.pop('tags')
-        print(tags_data)
         name = validated_data.get('name')
         image = validated_data.get('image')
         text = validated_data.get('text')
         cooking_time = validated_data.get('cooking_time')
         ingredients = validated_data.pop('recipy_with_ingredients')
-        print('CREATE RECIPY')
         recipy = Recipy.objects.create(
             author=self.context['request'].user,
             name=name,
@@ -241,25 +253,26 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
             cooking_time=cooking_time,
         )
         self.create_tags(tags_data, recipy)
-        print('CREATE TAGS DONE')
         self.create_ingredients(ingredients, recipy)
         return recipy
 
 
-class ShoppingCartWriteSerializer(serializers.ModelSerializer):
-    file = serializers.SerializerMethodField()
+class ShoppingCartItemSerializer(serializers.ModelSerializer):
+    # name = serializers.CharField(max_length=200)
+    # amount = serializers.IntegerField()
+    measurement_unit = serializers.SerializerMethodField()
 
     class Meta:
-        fields = '__all__'
-        model = ShoppingCart
+        fields = ('ingredient', 'amount', 'measurement_unit')
+        model = ShoppingCartItem
 
-    def get_file(self, instance):
-        cart = ShoppingCart.objects.get(id=instance.id)
-        queryset = ShoppingCart.objects.filter(user=instance.user_id)
-        f = open(cart.file, "r")
-        f.write(str(queryset))
-        f.close()
-        return cart.file
+    def get_measurement_unit(self, instance):
+        return instance.ingredient.measurement_unit
+
+    # def create(self, **validated_data):
+    #     name = validated_data.pop('name')
+    #     amount = validated_data.pop('amount')
+    #     return None
 
 
 class ShoppingCartReadSerializer(serializers.ModelSerializer):
@@ -284,3 +297,4 @@ class SlugToModelTagRelatedField(SlugRelatedField):
     def to_representation(self, instance):
         serializer = TagSerializer(instance)
         return serializer.data
+
