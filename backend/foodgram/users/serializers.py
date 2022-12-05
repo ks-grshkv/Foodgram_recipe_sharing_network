@@ -36,6 +36,8 @@ class UserSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, instance):
         try:
             user = self.context['request'].user
+            if user.is_anonymous:
+                return False
             return Subscription.objects.filter(user=user, author=instance).exists()
         except KeyError:
             return False
@@ -50,15 +52,15 @@ class UserSerializer(serializers.ModelSerializer):
     #     return instance.recipes.count()
 
 
-    def validate_username(self, value):
-        """
-        Проверяем, что нельзя сделать юзернейм 'me'
-        """
-        if value == 'me':
-            raise serializers.ValidationError('Задайте другой юзернейм')
-        if value is None:
-            raise serializers.ValidationError('Задайте не пустой юзернейм')
-        return value
+    # def validate_username(self, value):
+    #     """
+    #     Проверяем, что нельзя сделать юзернейм 'me'
+    #     """
+    #     if value == 'me':
+    #         raise serializers.ValidationError('Задайте другой юзернейм')
+    #     if value is None:
+    #         raise serializers.ValidationError('Задайте не пустой юзернейм')
+    #     return value
 
 
 class GetTokenSerializer(serializers.ModelSerializer):

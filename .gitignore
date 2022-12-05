@@ -132,3 +132,6 @@ dmypy.json
 .idea
 
 test_requests.http
+
+frontend/node_modules/
+frontend/build/

@@ -5,7 +5,7 @@ from rest_framework.routers import SimpleRouter
 
 router = SimpleRouter()
 router.register(
-    'users',
+    'api/users',
     UserViewSet,
     basename='users',
 )
@@ -23,7 +23,7 @@ router.register(
 urlpatterns = [
     # path('users/subscriptions/', SubscriptionViewSet.as_view({'delete': 'destroy', 'post': 'create'}), name='subscribe'),
     # path('users/', UserRegisterView.as_view(), name='signup'),
-    path('auth/token/login/', UserGetTokenView.as_view(), name='login'),
-    path('auth/token/logout/', UserDeleteTokenView.as_view(), name='login'),
+    path('api/auth/token/login/', UserGetTokenView.as_view(), name='login'),
+    path('api/auth/token/logout/', UserDeleteTokenView.as_view(), name='login'),
     path('', include(router.urls)),
 ]

@@ -1,11 +1,11 @@
-from django.http import FileResponse
-from recipes.models import Recipy, Tag, Ingredient, ShoppingCart, Favorite
+from django.http import FileResponse, HttpResponse
+from recipes.models import Recipy, Tag, Ingredient, ShoppingCart, Favorite, IngredientsToRecipe
 from rest_framework import viewsets
 from http import HTTPStatus
 from users.models import User
 
 from .permissions import IsAuthorOrReadOnlyPermission, OwnerAdmin
-from .serializers import RecipyReadSerializer, RecipyWriteSerializer, TagSerializer, IngredientSerializer, FavoriteSerializer, ShoppingCartSerializer
+from .serializers import RecipyReadSerializer, RecipyWriteSerializer, TagSerializer, IngredientSerializer, FavoriteSerializer, ShoppingCartReadSerializer, ShoppingCartWriteSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
@@ -14,6 +14,7 @@ from rest_framework.pagination import PageNumberPagination
 from .mixins import ListCreateDestroyViewset
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from .renderer import PlainTextRenderer
 
 
 class RecipyViewSet(viewsets.ModelViewSet):
@@ -23,13 +24,19 @@ class RecipyViewSet(viewsets.ModelViewSet):
     методы favorite и shopping_cart отвечают за добавление и удаление
     рецептов в список избранного и в список покупок.
     """
-    queryset = Recipy.objects.all()
+    # queryset = Recipy.objects.all()
     permission_classes = (OwnerAdmin, )
     pagination_class = PageNumberPagination
     # filter_backends = (filters.SearchFilter,)
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['author', 'tags', ]
     # search_fields = ('author', 'tags',)
+
+    def get_queryset(self):
+        if self.request.query_params.get('is_favorite'):
+            favorites = Favorite.objects.filter(user=self.request.user)
+            return favorites.recipes.all()
+        return Recipy.objects.all()
 
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
@@ -74,7 +81,7 @@ class RecipyViewSet(viewsets.ModelViewSet):
         """
         recipy = get_object_or_404(Recipy, id=self.kwargs.get('pk'))
         if self.request.method == 'POST':
-            serializer = ShoppingCartSerializer(data=self.request.data)
+            serializer = ShoppingCartReadSerializer(data=self.request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save(
                 user=self.request.user,
@@ -112,19 +119,10 @@ class IngredientViewSet(viewsets.ModelViewSet):
     search_fields = ('name',)
 
 
-class PassthroughRenderer(renderers.BaseRenderer):
-    """
-    Return data as-is. View should supply a Response.
-    """
-    media_type = ''
-    format = ''
-
-    def render(self, data, accepted_media_type=None, renderer_context=None):
-        return data
 
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
-    serializer_class = ShoppingCartSerializer
+    serializer_class = ShoppingCartReadSerializer
     # permission_classes = (IsAdminOrReadOnlyPermission,)
     # lookup_field = 'slug'
     # pagination_class = PageNumberPagination
@@ -136,18 +134,37 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
         cart = get_object_or_404(ShoppingCart, user_id=self.request.user.id)
         return cart
 
-    @action(methods=['get'], detail=True, renderer_classes=(PassthroughRenderer,))
+    @action(methods=['get'], detail=True, renderer_classes=(PlainTextRenderer,), serializer_class=ShoppingCartWriteSerializer)
     def download(self, *args, **kwargs):
-        instance = self.get_object()
+        # instance = self.get_object()
+        # serializer = ShoppingCartReadSerializer(instance)
+        # serializer.is_valid(raise_exception=True)
 
-        # get an open file handle (I'm just using a file attached to the model for this example):
-        file_handle = instance.file.open()
+        # # get an open file handle (I'm just using a file attached to the model for this example):
+        # file_handle = instance.file.open()
 
-        # send file
-        response = FileResponse(file_handle, content_type='whatever')
-        response['Content-Length'] = instance.file.size
-        response['Content-Disposition'] = 'attachment; filename="%s"' % instance.file.name
-
+        # # send file
+        # response = FileResponse(file_handle, content_type='whatever')
+        # response['Content-Length'] = instance.file.size
+        # response['Content-Disposition'] = 'attachment; filename="%s"' % instance.file.name
+        user = self.request.user
+        current_cart = ShoppingCart.objects.filter(user=user)
+        data = {}
+        for obj in current_cart:
+            print('RECIPY', obj.recipy.name)
+            ingredients = IngredientsToRecipe.objects.filter(recipy=obj.recipy).all()
+            for item in ingredients:
+                print('|||||||', item.ingredient.name, item.amount)
+                if item.ingredient in data.keys():
+                    data[item.ingredient.name] += item.amount
+                else:
+                    data[item.ingredient.name] = item.amount
+    
+        filename = 'shopping_list.txt'
+        print(data)
+        response = HttpResponse(data, content_type='text/plain; charset=UTF-8')
+        # response['Content-Disposition'] = 'attachment; filename="%s"' % instance.file
+        response['Content-Disposition'] = ('attachment; filename={0}'.format(filename))
         return response
 
 

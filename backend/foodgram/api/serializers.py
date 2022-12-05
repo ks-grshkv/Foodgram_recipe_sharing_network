@@ -1,6 +1,7 @@
 from recipes.models import Recipy, Tag, Ingredient, ShoppingCart, Favorite, IngredientsToRecipe
 from users.models import User
 from users.serializers import UserSerializer
+import uuid
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField, PrimaryKeyRelatedField
@@ -83,14 +84,15 @@ class IngredientSerializer(serializers.ModelSerializer):
 class IngredientsToRecipeSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     measurement_unit = serializers.SerializerMethodField()
-    id = serializers.SerializerMethodField()
+    # id = serializers.SerializerMethodField()
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
 
     class Meta:
         fields = ('id', 'amount', 'name', 'measurement_unit')
         model = IngredientsToRecipe
 
-    def get_id(self, instance):
-        return instance.ingredient_id
+    # def get_id(self, instance):
+    #     return instance.ingredient_id
 
     def get_measurement_unit(self, instance):
         ingredient = Ingredient.objects.get(id=instance.ingredient_id)
@@ -130,16 +132,25 @@ class RecipyReadSerializer(serializers.ModelSerializer):
 
     def get_is_favorite(self, instance):
         user = self.context['request'].user
+        if user.is_anonymous:
+            return False
         return Favorite.objects.filter(user=user, recipy=instance).exists()
     
     def get_is_in_shopping_cart(self, instance):
         user = self.context['request'].user
+        if user.is_anonymous:
+            return False
+
         return ShoppingCart.objects.filter(user=user, recipy=instance).exists()
 
 
 class RecipyWriteSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
-    ingredients = AddIngredientSerializer(
+    # ingredients = AddIngredientSerializer(
+    #     many=True,
+    #     source='recipy_with_ingredients'
+    # )
+    ingredients = IngredientsToRecipeSerializer(
         many=True,
         source='recipy_with_ingredients'
     )
@@ -185,7 +196,7 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
             recipy.tags.remove(current_tag)
         for tag in tags:
             recipy.tags.add(tag)
-        print('FINISHED TAGS')
+        print('FINISHED TAGS', recipy.tags.all())
     
     def update(self, instance, validated_data):
         tags_data = validated_data.pop('tags')
@@ -235,11 +246,31 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
         return recipy
 
 
-class ShoppingCartSerializer(serializers.ModelSerializer):
+class ShoppingCartWriteSerializer(serializers.ModelSerializer):
+    file = serializers.SerializerMethodField()
 
     class Meta:
         fields = '__all__'
         model = ShoppingCart
+
+    def get_file(self, instance):
+        cart = ShoppingCart.objects.get(id=instance.id)
+        queryset = ShoppingCart.objects.filter(user=instance.user_id)
+        f = open(cart.file, "r")
+        f.write(str(queryset))
+        f.close()
+        return cart.file
+
+
+class ShoppingCartReadSerializer(serializers.ModelSerializer):
+    file = serializers.SerializerMethodField()
+
+    class Meta:
+        fields = '__all__'
+        model = ShoppingCart
+
+    def get_file(self, instance):
+        return None
 
 
 class FavoriteSerializer(serializers.ModelSerializer):

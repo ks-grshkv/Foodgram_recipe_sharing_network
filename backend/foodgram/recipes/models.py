@@ -1,8 +1,5 @@
 from django.db import models
-# from django.contrib.auth import get_user_model
 from users.models import User
-
-# User = get_user_model()
 
 
 class Tag(models.Model):
@@ -33,7 +30,6 @@ class Recipy(models.Model):
         blank=True
     )
     cooking_time = models.IntegerField(null=True)
-    pub_date = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -41,18 +37,13 @@ class Recipy(models.Model):
     )
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='IngredientsToRecipe',
+        through='IngredientsToRecipe'
     )
-    # is_favorite = models.BooleanField()
 
-    filter_horizontal = ('tag')
+    # filter_horizontal = ('tag')
 
     def __str__(self):
         return self.name
-
-    @property
-    def is_favorite():
-        return False
 
 
 class IngredientsToRecipe(models.Model):
@@ -88,6 +79,12 @@ class Favorite(models.Model):
 
 
 class ShoppingCart(models.Model):
+    file = models.FileField(
+        verbose_name='Список покупок',
+        upload_to='recipes/media/txt/',
+        null=True,
+        blank=True
+    )
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
