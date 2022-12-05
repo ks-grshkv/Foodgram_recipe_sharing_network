@@ -7,29 +7,31 @@ class IngredientsToRecipeInline(admin.TabularInline):
 
 
 class RecipyAdmin(admin.ModelAdmin):
-
     list_display = (
-        'name', 'author', 'text', 'image', 'cooking_time', 'favorited_count') 
+        'name',
+        'author',
+        'text',
+        'image',
+        'cooking_time',
+        'favorited_count'
+    )
     inlines = [IngredientsToRecipeInline]
-    readonly_fields = ('favorited_count',)
-    search_fields = ('name',) 
+    readonly_fields = ('favorited_count', )
+    search_fields = ('name', )
     list_filter = ('tags', 'author', 'name')
     empty_value_display = '-пусто-'
-
-    # def favorited_count(self, obj):
-    #     return 123
 
 
 class IngredientAdmin(admin.ModelAdmin):
     list_display = (
         'name', 'measurement_unit')
+    list_filter = ('name', )
 
 
 class TagAdmin(admin.ModelAdmin):
-
     list_display = (
         'name', 'slug', 'color') 
-    search_fields = ('slug',) 
+    search_fields = ('slug',)
 
 
 admin.site.register(Recipy, RecipyAdmin)

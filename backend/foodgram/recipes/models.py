@@ -100,13 +100,17 @@ class Favorite(models.Model):
         related_name='favorite',
         on_delete=models.CASCADE,
         blank=True,
-        null=True
+        null=True,
+        verbose_name='Лайкнул рецепт'
     )
 
     class Meta:
         ordering = ('-user',)
         verbose_name = 'Добавление в избранное'
         verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f'{self.user} likes {self.recipy}'
 
 
 class ShoppingCart(models.Model):
@@ -123,13 +127,17 @@ class ShoppingCart(models.Model):
         related_name='shopping_cart',
         on_delete=models.CASCADE,
         blank=True,
-        null=True
+        null=True,
+        verbose_name='Добавил в корзину рецепт'
     )
 
     class Meta:
         ordering = ('-user',)
         verbose_name = 'Добавление рецептов в список покупок'
         verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f'{self.user} buys {self.recipy}'
 
 
 class ShoppingCartItem(models.Model):

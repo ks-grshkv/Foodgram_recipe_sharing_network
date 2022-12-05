@@ -56,6 +56,9 @@ class User(AbstractUser):
         verbose_name = 'Пользователи'
         verbose_name_plural = verbose_name
 
+    def __str__(self):
+        return self.username
+
 
 class Subscription(models.Model):
     author = models.ForeignKey(
@@ -80,3 +83,5 @@ class Subscription(models.Model):
         verbose_name = 'Подписки'
         verbose_name_plural = verbose_name
 
+    def __str__(self):
+            return f'{self.user} follows {self.author}'

@@ -53,7 +53,6 @@ class RecipyViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data)
 
-
     @action(detail=True, methods=['post', 'delete'], url_path='favorite')
     def favorite(self, *args, **kwargs):
         """
@@ -150,10 +149,13 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
                 cart_item = ShoppingCartItem.objects.get_or_create(cart=obj, ingredient=ingredient)[0]
                 cart_item.amount += item.amount
                 cart_item.save()
+        result = []
+        for item in ShoppingCartItem.objects.filter(cart__in=current_cart):
+            str = f'{item.ingredient.name}: {item.amount} {item.ingredient.measurement_unit};\n'
+            result.append(str)
 
         filename = 'shopping_list.txt'
-        serializer = ShoppingCartItemSerializer(ShoppingCartItem.objects.all(), many=True)
-        response = HttpResponse(serializer.data, content_type='text/plain; charset=UTF-8')
+        response = HttpResponse(result, content_type='text/plain; charset=UTF-8')
         # response['Content-Disposition'] = 'attachment; filename="%s"' % instance.file
         response['Content-Disposition'] = ('attachment; filename={0}'.format(filename))
         return response
