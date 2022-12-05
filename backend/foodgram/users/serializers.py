@@ -104,6 +104,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     # recipes = serializers.SerializerMethodField()
     # recipes_count = serializers.SerializerMethodField()
 
+
     class Meta:
         fields = '__all__'
         model = Subscription

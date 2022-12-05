@@ -16,6 +16,10 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .renderer import PlainTextRenderer
 
+class CustomPagination(PageNumberPagination):
+    page_size = 6
+    page_size_query_param = 'limit'
+    max_page_size = 1000
 
 class RecipyViewSet(viewsets.ModelViewSet):
     """
@@ -26,7 +30,7 @@ class RecipyViewSet(viewsets.ModelViewSet):
     """
     # queryset = Recipy.objects.all()
     permission_classes = (OwnerAdmin, )
-    pagination_class = PageNumberPagination
+    pagination_class = CustomPagination
     # filter_backends = (filters.SearchFilter,)
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['author', 'tags', ]
@@ -36,7 +40,7 @@ class RecipyViewSet(viewsets.ModelViewSet):
         if self.request.query_params.get('is_favorite'):
             favorites = Favorite.objects.filter(user=self.request.user)
             return favorites.recipes.all()
-        return Recipy.objects.all()
+        return Recipy.objects.all() #параша
 
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
