@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User, Subscription
-from .permissions import IsAdminOrSuper, IsAuth
+from .permissions import IsAdminorOwner, IsAuth
 from .serializers import GetTokenSerializer, UserSerializer, SubscriptionSerializer, UpdatePasswordSerializer, UserWithRecipesSerializer
 
 
@@ -51,7 +51,7 @@ class UserViewSet(viewsets.ModelViewSet):
         detail=False,
         methods=['get', 'patch'],
         url_path='me',
-        permission_classes=(IsAuth, ))
+        permission_classes=(IsAdminorOwner,))
     def me(self, request, pk=None):
         data = request.data.copy()
         user = get_object_or_404(User, username=request.user.username)
@@ -77,17 +77,14 @@ class UserViewSet(viewsets.ModelViewSet):
         detail=True,
         methods=['post', 'delete'],
         url_path='subscribe',
+        permission_classes=(IsAuth, IsAdminorOwner),
         serializer_class=SubscriptionSerializer)
     def subscribe(self, *args, **kwargs):
-        print('ENTER SUBSCRIBE', kwargs)
         author = get_object_or_404(User, id=self.kwargs.get('id'))
         print(author)
         if self.request.method == 'POST':
-            print('POST')
             serializer = SubscriptionSerializer(data=self.request.data)
-            print('start validation', author, self.request.user)
             serializer.is_valid(raise_exception=True)
-            print('start save', author, self.request.user)
             serializer.save(
                 user=self.request.user,
                 author=author
@@ -107,7 +104,7 @@ class UserViewSet(viewsets.ModelViewSet):
         detail=False,
         methods=['get'],
         url_path='subscriptions',
-        permission_classes=(IsAuth, ),
+        permission_classes=(IsAuth, IsAdminorOwner),
         serializer_class=UserWithRecipesSerializer
     )
     def subscriptions(self, request, pk=None):
@@ -119,7 +116,7 @@ class UserViewSet(viewsets.ModelViewSet):
         detail=False,
         methods=['POST'],
         url_path='set_password',
-        permission_classes=(IsAuth, ),
+        permission_classes=(IsAdminorOwner, ),
         serializer_class=UpdatePasswordSerializer
     )
     def set_password(self, request, pk=None):
@@ -135,7 +132,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class UserGetTokenView(generics.GenericAPIView):
     """
-    Получение токена в ответ на email и пароль
+    Эндпоинт auth/token/login .
+    Получение токена в ответ на email и пароль.
     """
     serializer_class = GetTokenSerializer
 
@@ -160,15 +158,16 @@ class UserGetTokenView(generics.GenericAPIView):
 
 class UserDeleteTokenView(generics.GenericAPIView):
     """
-    Удаление токена
+    Эндпоинт auth/token/logout .
+    Удаление токена.
     """
     serializer_class = GetTokenSerializer
+    permission_classes = (IsAdminorOwner, )
 
     def post(self, request):
         user = get_object_or_404(
             User,
             id=self.request.user.id,
         )
-        refresh = RefreshToken.for_user(user)
-        # user.delete()
+        RefreshToken.for_user(user)
         return Response(status=HTTPStatus.NO_CONTENT)

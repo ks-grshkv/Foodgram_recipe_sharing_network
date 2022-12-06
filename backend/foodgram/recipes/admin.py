@@ -31,7 +31,6 @@ class IngredientAdmin(admin.ModelAdmin):
 class TagAdmin(admin.ModelAdmin):
     list_display = (
         'name', 'slug', 'color') 
-    search_fields = ('slug',)
 
 
 admin.site.register(Recipy, RecipyAdmin)

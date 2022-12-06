@@ -1,8 +1,9 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
-
 from .models import User, Subscription
+from recipes.models import Recipy
+from api.image_serializer import Base64ImageField
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -105,37 +106,54 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return Subscription.objects.filter(user=user, author=instance.author).exists()
 
 
+class RecipyReadMinimalSerializer(serializers.ModelSerializer):
+    image = Base64ImageField(max_length=None, use_url=True)
+
+    class Meta:
+        fields = ('name', 'text', 'image', 'cooking_time',)
+        model = Recipy
+
+
 class UserWithRecipesSerializer(serializers.ModelSerializer):
-    # recipes = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
     is_subscribed = serializers.SerializerMethodField()
     id = serializers.SerializerMethodField()
     username = serializers.SerializerMethodField()
     email = serializers.SerializerMethodField()
+    last_name = serializers.SerializerMethodField()
+    first_name = serializers.SerializerMethodField()
 
     class Meta:
         fields = (
             'id',
             'username',
             'email',
-            # 'first_name',
-            # 'last_name',
+            'first_name',
+            'last_name',
             # 'role',
             'recipes_count',
-            # 'recipes',
+            'recipes',
             'is_subscribed'
         )
         model = Subscription
 
-    # def get_recipes(self, instance):
-    #     serializer = instance.recipes.all()
-    #     return serializer
+    def get_recipes(self, instance):
+        print('AAAAAAAAAAAAAA', instance.author.recipes.all())
+        serializer = RecipyReadMinimalSerializer(instance.author.recipes.all(), many=True)
+        return serializer.data
 
     def get_id(self, instance):
         return instance.author.id
     
     def get_username(self, instance):
         return instance.author.username
+
+    def get_first_name(self, instance):
+        return instance.author.first_name
+    
+    def get_last_name(self, instance):
+        return instance.author.last_name
 
     def get_recipes_count(self, instance):
         return instance.author.recipes.count()

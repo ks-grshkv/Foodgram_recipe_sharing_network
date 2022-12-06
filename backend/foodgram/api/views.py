@@ -49,9 +49,14 @@ class RecipyViewSet(viewsets.ModelViewSet):
             return RecipyReadSerializer
         return RecipyWriteSerializer
 
-    def perform_create(self, serializer):
-        serializer.save()
-        return Response(serializer.data)
+    # def perform_create(self, serializer):
+    #     print('AAAAAA PERFORM CREATE')
+    #     serializer.save()
+    #     serializer = RecipyReadSerializer(data=self.request.data)
+    #     print('AAAAAA VALIDATING')
+    #     serializer.is_valid(raise_exception=True)
+    #     print('RETURNING')
+    #     return Response(RecipyWriteSerializer(data=self.request.data).data)
 
     @action(detail=True, methods=['post', 'delete'], url_path='favorite')
     def favorite(self, *args, **kwargs):
@@ -153,6 +158,7 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
         for item in ShoppingCartItem.objects.filter(cart__in=current_cart):
             str = f'{item.ingredient.name}: {item.amount} {item.ingredient.measurement_unit};\n'
             result.append(str)
+        cart_item.delete()
 
         filename = 'shopping_list.txt'
         response = HttpResponse(result, content_type='text/plain; charset=UTF-8')

@@ -4,65 +4,27 @@ from users.models import Subscription
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField, PrimaryKeyRelatedField
+from .image_serializer import Base64ImageField
 
 
-class AddIngredientSerializer(serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-    amount = serializers.IntegerField()
+# class AddIngredientSerializer(serializers.ModelSerializer):
+#     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+#     amount = serializers.IntegerField()
 
-    class Meta:
-        model = IngredientsToRecipe
-        fields = ("id", "amount")
+#     class Meta:
+#         model = IngredientsToRecipe
+#         fields = ("id", "amount")
 
+class IngredientPrimaryKeyRelatedField(serializers.RelatedField):
+    def to_representation(self, instance):
+        print('FFFFFFF11111F', self, instance)
+        ingredient_in_recipy = get_object_or_404(IngredientsToRecipe, id=instance)
 
-class Base64ImageField(serializers.ImageField):
-    """
-    A Django REST framework field for handling image-uploads through raw post data.
-    It uses base64 for encoding and decoding the contents of the file.
-
-    Heavily based on
-    https://github.com/tomchristie/django-rest-framework/pull/1268
-
-    Updated for Django REST framework 3.
-    """
-
-    def to_internal_value(self, data):
-        from django.core.files.base import ContentFile
-        import base64
-        import six
-        import uuid
-
-        # Check if this is a base64 string
-        if isinstance(data, six.string_types):
-            # Check if the base64 string is in the "data:" format
-            if 'data:' in data and ';base64,' in data:
-                # Break out the header from the base64 content
-                header, data = data.split(';base64,')
-
-            # Try to decode the file. Return validation error if it fails.
-            try:
-                decoded_file = base64.b64decode(data)
-            except TypeError:
-                self.fail('invalid_image')
-
-            # Generate file name:
-            file_name = str(uuid.uuid4())[:12] # 12 characters are more than enough.
-            # Get the file name extension:
-            file_extension = self.get_file_extension(file_name, decoded_file)
-
-            complete_file_name = "%s.%s" % (file_name, file_extension, )
-
-            data = ContentFile(decoded_file, name=complete_file_name)
-
-        return super(Base64ImageField, self).to_internal_value(data)
-
-    def get_file_extension(self, file_name, decoded_file):
-        import imghdr
-
-        extension = imghdr.what(file_name, decoded_file)
-        extension = "jpg" if extension == "jpeg" else extension
-
-        return extension
+        return ingredient_in_recipy.ingredient.id
+    
+    def to_internal_value(self, value):
+        print('FFFFFFF22222F', self,  value)
+        return value
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -78,6 +40,7 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = Ingredient
         # exclude = ('id',)
+
 
 class IngredientsToRecipeReadSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
@@ -99,18 +62,20 @@ class IngredientsToRecipeReadSerializer(serializers.ModelSerializer):
         ingredient = Ingredient.objects.get(id=instance.ingredient_id)
         return ingredient.name
 
-    
+
 class IngredientsToRecipeSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     measurement_unit = serializers.SerializerMethodField()
-    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    # id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    id = IngredientPrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    # id = serializers.SerializerMethodField()
 
     class Meta:
         fields = ('id', 'amount', 'name', 'measurement_unit')
         model = IngredientsToRecipe
-
+    
     # def get_id(self, instance):
-    #     return instance.ingredient_id
+    #     return instance.ingredient.id
 
     def get_measurement_unit(self, instance):
         ingredient = Ingredient.objects.get(id=instance.ingredient_id)
@@ -130,11 +95,7 @@ class RecipyReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(
         many=True
     )
-
-    # image = serializers.ImageField(max_length=None, allow_empty_file=True, use_url=True)
-    image = Base64ImageField(
-        max_length=None, use_url=True,
-    )
+    image = Base64ImageField(max_length=None, use_url=True)
     is_favorite = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -143,19 +104,7 @@ class RecipyReadSerializer(serializers.ModelSerializer):
         model = Recipy
 
     def get_author(self, instance):
-        print('AAAAAAAAAAAA', self.context['request'].user, instance.author)
         serializer = UserSerializer(instance.author)
-        # print(Subscription.objects.filter(user=self.context['request'].user, author=instance.author).exists())
-        # serializer = UserSerializer(
-        #     instance.author,
-        #     data={'is_subscribed': Subscription.objects.filter(user=self.context['request'].user, author=instance.author).exists()},
-        #     partial=True
-        # )
-        # serializer.is_valid()
-        # serializer.update(
-        #     is_subscribed=Subscription.objects.filter(user=self.context['request'].user, author=instance.author).exists(),
-        #     partial=True)
-        
         return serializer.data
 
     def get_is_favorite(self, instance):
@@ -168,9 +117,8 @@ class RecipyReadSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         if user.is_anonymous:
             return False
-
         return ShoppingCart.objects.filter(user=user, recipy=instance).exists()
-
+        
 
 class RecipyWriteSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
@@ -181,10 +129,7 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True
     )
-    # image = serializers.ImageField(max_length=None, allow_empty_file=True, use_url=True)
-    image = Base64ImageField(
-        max_length=None, use_url=True,
-    )
+    image = Base64ImageField(max_length=None, use_url=True)
     is_favorite = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -192,53 +137,62 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = Recipy
 
+    def create_ingredients(self, ingredients, recipy):
+        IngredientsToRecipe.objects.filter(recipy=recipy).delete()
+        for ingredient in ingredients:
+            print('aAAAAAAAA INGREDIENT', ingredient)
+            ingredient_obj = get_object_or_404(Ingredient, id=ingredient['id'])
+            IngredientsToRecipe.objects.create(
+                recipy=recipy, ingredient=ingredient_obj,
+                amount=ingredient['amount']
+            )
+        print('FINISH INGREDIENTS')
+
     def get_is_favorite(self, instance):
         return False
     
     def get_author(self, *args):
         serializer = UserSerializer(self.context['request'].user)
-        print('AAAA', serializer.data)
         return serializer.data
 
     def get_is_in_shopping_cart(self, instance):
         return False
 
-    def create_ingredients(self, ingredients, recipy):
-        print('AAAA UPDAE3')
-        IngredientsToRecipe.objects.filter(recipy=recipy).delete()
-        for ingredient in ingredients:
-            IngredientsToRecipe.objects.create(
-                recipy=recipy, ingredient=ingredient['id'],
-                amount=ingredient['amount']
-            )
-
     def create_tags(self, tags, recipy):
-        print('AAAA UPDAE2')
         current_tags = recipy.tags.all()
+        print('CREATE TAGSS', tags)
         for current_tag in current_tags:
+            print('TAG', current_tag)
             recipy.tags.remove(current_tag)
         for tag in tags:
+            print('TAG', tag)
             recipy.tags.add(tag)
+        print('FINISH TAGS')
     
     def update(self, instance, validated_data):
-        print('AAAA UPDAE')
+        print('AAAAAA UPDATE')
         tags_data = validated_data.pop('tags')
         name = validated_data.get('name')
         image = validated_data.get('image')
         text = validated_data.get('text')
         cooking_time = validated_data.get('cooking_time')
         ingredients = validated_data.pop('recipy_with_ingredients')
+        print('AAAAAA DATA POPPED')
         recipy = get_object_or_404(Recipy, id=instance.id)
         recipy.name = name
         recipy.image = image
         recipy.text = text
         recipy.cooking_time = cooking_time
         self.create_tags(tags_data, recipy)
+        print('AAAAAA CREATIN INGR')
         self.create_ingredients(ingredients, recipy)
+        print('SAVING RECIPY.....')
         recipy.save()
+        print('FINISH UPDATE')
         return recipy
     
     def create(self, validated_data):
+        print('AAAAAA CREATE')
         tags_data = validated_data.pop('tags')
         name = validated_data.get('name')
         image = validated_data.get('image')
@@ -252,8 +206,11 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
             text=text,
             cooking_time=cooking_time,
         )
+        print('AAAAAA CREATIN TAGS')
         self.create_tags(tags_data, recipy)
+        print('AAAAAA CREATIN INGR')
         self.create_ingredients(ingredients, recipy)
+        print('AAAAAA FINISH CREATE SRIALIZER')
         return recipy
 
 
@@ -293,8 +250,4 @@ class FavoriteSerializer(serializers.ModelSerializer):
         model = Favorite
 
 
-class SlugToModelTagRelatedField(SlugRelatedField):
-    def to_representation(self, instance):
-        serializer = TagSerializer(instance)
-        return serializer.data
 

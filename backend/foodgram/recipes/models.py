@@ -17,8 +17,8 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=256)
-    measurement_unit = models.CharField(max_length=256)
+    name = models.CharField(max_length=256, verbose_name='Название')
+    measurement_unit = models.CharField(max_length=256, verbose_name='Единицы')
 
     class Meta:
         ordering = ('-name',)
@@ -31,23 +31,37 @@ class Ingredient(models.Model):
 
 class Recipy(models.Model):
     name = models.CharField(max_length=256)
-    text = models.TextField()
-    tags = models.ManyToManyField(Tag, blank=True)
+    text = models.TextField(
+        null=False,
+        blank=False,
+        verbose_name='Текст рецепта'
+    )
+    tags = models.ManyToManyField(
+        Tag,
+        blank=True,
+        verbose_name='Теги'
+    )
     image = models.ImageField(
         verbose_name='Изображение',
         upload_to='recipes/media/',
         null=True,
         blank=True
     )
-    cooking_time = models.IntegerField(null=True)
+    cooking_time = models.IntegerField(
+        null=False,
+        blank=False,
+        verbose_name='Время приготовления, мин'
+    )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='recipes'
+        related_name='recipes',
+        verbose_name='Автор'
     )
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='IngredientsToRecipe'
+        through='IngredientsToRecipe',
+        verbose_name='Ингредиенты'
     )
 
     filter_horizontal = ('tags')
@@ -72,7 +86,11 @@ class IngredientsToRecipe(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Ингредиент'
     )
-    amount = models.PositiveSmallIntegerField()
+    amount = models.PositiveSmallIntegerField(
+        blank=False,
+        null=False,
+        verbose_name='Количество'
+    )
     recipy = models.ForeignKey(
         Recipy,
         related_name='recipy_with_ingredients',
@@ -84,6 +102,9 @@ class IngredientsToRecipe(models.Model):
         ordering = ('-recipy',)
         verbose_name = 'Ингредиенты к рецептам'
         verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f'{self.recipy} <- {self.ingredient.name}'
 
 
 class Favorite(models.Model):
