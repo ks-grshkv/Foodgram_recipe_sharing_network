@@ -1,20 +1,30 @@
 from django.http import HttpResponse
-from recipes.models import ShoppingCartItem, Recipy, Tag, Ingredient, ShoppingCart, Favorite, IngredientsToRecipe
-from rest_framework import viewsets
+from recipes.models import (
+    ShoppingCartItem,
+    Recipy,
+    Tag,
+    Ingredient,
+    ShoppingCart,
+    Favorite,
+    IngredientsToRecipe)
 from http import HTTPStatus
 from users.models import User
-import json
 
-from .permissions import IsAuthorOrReadOnlyPermission, OwnerAdmin
-from .serializers import RecipyReadSerializer, RecipyWriteSerializer, TagSerializer, IngredientSerializer, FavoriteSerializer, ShoppingCartItemSerializer, ShoppingCartReadSerializer
+from .permissions import OwnerAdmin
+from .serializers import (
+    RecipyReadSerializer,
+    RecipyWriteSerializer,
+    TagSerializer,
+    IngredientSerializer,
+    FavoriteSerializer,
+    ShoppingCartItemSerializer,
+    ShoppingCartReadSerializer)
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, permissions, viewsets, renderers
+from rest_framework import filters, viewsets
 from rest_framework.pagination import PageNumberPagination
-from .mixins import ListCreateDestroyViewset
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
 from .renderer import PlainTextRenderer
 from .pagination import CustomPagination
 
@@ -33,12 +43,18 @@ class RecipyViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.query_params.get('is_favorite'):
-            recipys = [x.recipy for x in Favorite.objects.all() if x.user == self.request.user]
+            recipys = [
+                x.recipy for x in Favorite.objects.all()
+                if x.user == self.request.user
+            ]
             recipy_ids = [x.id for x in recipys]
             qs = Recipy.objects.filter(id__in=recipy_ids)
             return qs
         if self.request.query_params.get('is_in_shopping_cart'):
-            recipys = [x.recipy for x in ShoppingCart.objects.all() if x.user == self.request.user]
+            recipys = [
+                x.recipy for x in ShoppingCart.objects.all()
+                if x.user == self.request.user
+            ]
             recipy_ids = [x.id for x in recipys]
             qs = Recipy.objects.filter(id__in=recipy_ids)
             return qs
@@ -49,20 +65,11 @@ class RecipyViewSet(viewsets.ModelViewSet):
             return RecipyReadSerializer
         return RecipyWriteSerializer
 
-    # def perform_create(self, serializer):
-    #     print('AAAAAA PERFORM CREATE')
-    #     serializer.save()
-    #     serializer = RecipyReadSerializer(data=self.request.data)
-    #     print('AAAAAA VALIDATING')
-    #     serializer.is_valid(raise_exception=True)
-    #     print('RETURNING')
-    #     return Response(RecipyWriteSerializer(data=self.request.data).data)
-
     @action(detail=True, methods=['post', 'delete'], url_path='favorite')
     def favorite(self, *args, **kwargs):
         """
         URL /recipes/<id>/favorite
-        Добавить рецепт в избранное \ удалить из избранного.
+        Добавить рецепт в избранное, удалить из избранного.
         """
         recipy = get_object_or_404(Recipy, id=self.kwargs.get('pk'))
         if self.request.method == 'POST':
@@ -88,7 +95,7 @@ class RecipyViewSet(viewsets.ModelViewSet):
     def shopping_cart(self, *args, **kwargs):
         """
         URL /recipes/<id>/shopping_cart
-        Добавить рецепт в список покупок \ удалить из списка покупок.
+        Добавить рецепт в список покупок, удалить из списка покупок.
         """
         recipy = get_object_or_404(Recipy, id=self.kwargs.get('pk'))
         if self.request.method == 'POST':
@@ -143,40 +150,51 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
         cart = get_object_or_404(ShoppingCart, user_id=self.request.user.id)
         return cart
 
-    @action(methods=['get'], detail=True, renderer_classes=(PlainTextRenderer,), serializer_class=ShoppingCartItemSerializer)
+    @action(
+        methods=['get'],
+        detail=True,
+        renderer_classes=(PlainTextRenderer,),
+        serializer_class=ShoppingCartItemSerializer)
     def download(self, *args, **kwargs):
         user = self.request.user
         current_cart = ShoppingCart.objects.filter(user=user)
         for obj in current_cart:
-            ingredients = IngredientsToRecipe.objects.filter(recipy=obj.recipy).all()
+            ingredients = IngredientsToRecipe.objects.filter(
+                recipy=obj.recipy
+            ).all()
             for item in ingredients:
                 ingredient = Ingredient.objects.get(id=item.ingredient.id)
-                cart_item = ShoppingCartItem.objects.get_or_create(cart=obj, ingredient=ingredient)[0]
+                cart_item = ShoppingCartItem.objects.get_or_create(
+                    cart=obj,
+                    ingredient=ingredient
+                )[0]
                 cart_item.amount += item.amount
                 cart_item.save()
         result = []
         for item in ShoppingCartItem.objects.filter(cart__in=current_cart):
-            str = f'{item.ingredient.name}: {item.amount} {item.ingredient.measurement_unit};\n'
+            str = (
+                f'{item.ingredient.name}'
+                f': {item.amount} {item.ingredient.measurement_unit};\n'
+            )
             result.append(str)
         cart_item.delete()
 
         filename = 'shopping_list.txt'
-        response = HttpResponse(result, content_type='text/plain; charset=UTF-8')
-        # response['Content-Disposition'] = 'attachment; filename="%s"' % instance.file
-        response['Content-Disposition'] = ('attachment; filename={0}'.format(filename))
+        response = HttpResponse(
+            result, content_type='text/plain; charset=UTF-8'
+        )
+        response['Content-Disposition'] = (
+            'attachment; filename={0}'.format(filename)
+        )
         return response
 
 
 class FavoriteViewSet(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
-    # permission_classes = (IsAdminOrReadOnlyPermission,)
-    # lookup_field = 'slug'
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('user',)
-    
+
     def get_queryset(self):
         user = get_object_or_404(User, username=self.request.user.username)
         return user.favorite.all()
-        # параша
-    

@@ -1,7 +1,12 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
-from .views import RecipyViewSet, TagViewSet, IngredientViewSet, ShoppingCartViewSet, FavoriteViewSet
+from .views import (
+    RecipyViewSet,
+    TagViewSet,
+    IngredientViewSet,
+    ShoppingCartViewSet,
+    FavoriteViewSet)
 
 app_name = 'api'
 
@@ -34,5 +39,4 @@ router.register(
 
 urlpatterns = [
     path('/', include(router.urls)),
-    # path('api-token-auth/', views.obtain_auth_token),
 ]

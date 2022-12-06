@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import Recipy, Tag, Ingredient, IngredientsToRecipe, Favorite, ShoppingCart
+from .models import (
+    Recipy,
+    Tag,
+    Ingredient,
+    IngredientsToRecipe,
+    Favorite,
+    ShoppingCart)
 
 
 class IngredientsToRecipeInline(admin.TabularInline):
@@ -30,7 +36,7 @@ class IngredientAdmin(admin.ModelAdmin):
 
 class TagAdmin(admin.ModelAdmin):
     list_display = (
-        'name', 'slug', 'color') 
+        'name', 'slug', 'color')
 
 
 admin.site.register(Recipy, RecipyAdmin)

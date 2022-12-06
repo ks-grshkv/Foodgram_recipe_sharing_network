@@ -135,3 +135,4 @@ test_requests.http
 
 frontend/node_modules/
 frontend/build/
+backend/recipes/media
