@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.authtoken.models import Token
 from api.pagination import CustomPagination
 from .models import User, Subscription
 from .permissions import IsAdminorOwner, IsAuth
@@ -163,9 +163,8 @@ class UserGetTokenView(generics.GenericAPIView):
 
         if user.password != password:
             return Response(status=HTTPStatus.BAD_REQUEST)
-        # serializer.save()
-        refresh = RefreshToken.for_user(user)
-        return Response(str(refresh.access_token))
+        refresh = Token.objects.create(user=user)
+        return Response(str(refresh.key))
 
 
 class UserDeleteTokenView(generics.GenericAPIView):
@@ -174,12 +173,13 @@ class UserDeleteTokenView(generics.GenericAPIView):
     Удаление токена.
     """
     serializer_class = GetTokenSerializer
-    permission_classes = (IsAdminorOwner, )
+    permission_classes = (IsAuth, )
 
     def post(self, request):
         user = get_object_or_404(
             User,
             id=self.request.user.id,
         )
-        RefreshToken.for_user(user)
+        refresh = get_object_or_404(Token, user=user)
+        refresh.delete()
         return Response(status=HTTPStatus.NO_CONTENT)
