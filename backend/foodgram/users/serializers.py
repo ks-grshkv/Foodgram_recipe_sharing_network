@@ -1,11 +1,16 @@
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
+from rest_framework.validators import UniqueValidator
 from .models import User, Subscription
 from recipes.models import Recipy
 from api.image_serializer import Base64ImageField
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Базовый сериализатор для работы с пользователями.
+    Используется во время создания, получения списка пользователей,
+    а также получения информации о конкретном пользователе.
+    """
     username = serializers.CharField(
         max_length=150,
         validators=[UniqueValidator(queryset=User.objects.all())],
@@ -54,9 +59,6 @@ class GetTokenSerializer(serializers.ModelSerializer):
         model = User
 
     def validate(self, data):
-        """
-        Проверяем, что пароль и email не пустые
-        """
         if (
             (data.get('email') is None)
             or (data.get('password') is None)
@@ -66,6 +68,9 @@ class GetTokenSerializer(serializers.ModelSerializer):
 
 
 class UpdatePasswordSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор данных для обновления пароля.
+    """
     new_password = serializers.CharField()
     current_password = serializers.CharField()
 
@@ -73,41 +78,31 @@ class UpdatePasswordSerializer(serializers.ModelSerializer):
         fields = ('new_password', 'current_password')
         model = User
 
-
-class SubscriptionSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(slug_field='id', read_only='True')
-    author = serializers.SlugRelatedField(slug_field='id', read_only='True')
-    is_subscribed = serializers.SerializerMethodField()
-
-    class Meta:
-        fields = '__all__'
-        model = Subscription
-
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Subscription.objects.all(),
-                fields=['author', 'user']
-            )
-        ]
-
-    def get_is_subscribed(self, instance):
-        user = instance.user
-        if user.is_anonymous:
-            return False
-        return Subscription.objects.filter(
-            user=user, author=instance.author
-        ).exists()
+    def validate(self, data):
+        if (
+            (data.get('password') is None)
+            or (data.get('new_password') is None)
+        ):
+            raise serializers.ValidationError('Пароль не может быть пустым')
+        return data
 
 
 class RecipyReadMinimalSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для краткой информации о рецепте.
+    Используется во вложенных рецептах (например, в users/subscriptions).
+    """
     image = Base64ImageField(max_length=None, use_url=True)
 
     class Meta:
-        fields = ('name', 'text', 'image', 'cooking_time',)
+        fields = ('id', 'name', 'image', 'cooking_time',)
         model = Recipy
 
 
 class UserWithRecipesSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для данных о пользователе со вложенными рецептами.
+    """
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
     is_subscribed = serializers.SerializerMethodField()
@@ -131,10 +126,18 @@ class UserWithRecipesSerializer(serializers.ModelSerializer):
         model = Subscription
 
     def get_recipes(self, instance):
-        serializer = RecipyReadMinimalSerializer(
-            instance.author.recipes.all(),
-            many=True
-        )
+        request = self.context['request']
+        recipes_limit = request.query_params.get('recipes_limit')
+        if recipes_limit:
+            serializer = RecipyReadMinimalSerializer(
+                instance.author.recipes.all()[:int(recipes_limit)],
+                many=True
+            )
+        else:
+            serializer = RecipyReadMinimalSerializer(
+                instance.author.recipes.all(),
+                many=True
+            )
         return serializer.data
 
     def get_id(self, instance):

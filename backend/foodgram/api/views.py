@@ -7,10 +7,8 @@ from recipes.models import (
     ShoppingCart,
     Favorite,
     IngredientsToRecipe)
+from users.serializers import RecipyReadMinimalSerializer
 from http import HTTPStatus
-from users.models import User
-
-from .permissions import OwnerAdmin
 from .serializers import (
     RecipyReadSerializer,
     RecipyWriteSerializer,
@@ -20,13 +18,14 @@ from .serializers import (
     ShoppingCartItemSerializer,
     ShoppingCartReadSerializer)
 from django.shortcuts import get_object_or_404
+from .permissions import IsAuthorOrReadOnlyPermission
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from .renderer import PlainTextRenderer
 from .pagination import CustomPagination
+from rest_framework.permissions import IsAuthenticated
 
 
 class RecipyViewSet(viewsets.ModelViewSet):
@@ -36,13 +35,17 @@ class RecipyViewSet(viewsets.ModelViewSet):
     методы favorite и shopping_cart отвечают за добавление и удаление
     рецептов в список избранного и в список покупок.
     """
-    permission_classes = (OwnerAdmin, )
+    permission_classes = (IsAuthorOrReadOnlyPermission, )
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ['author', 'tags', ]
 
     def get_queryset(self):
-        if self.request.query_params.get('is_favorite'):
+        """
+        Фильтрация по non-model fields, получение основного
+        кверисета рецептов.
+        """
+        if self.request.query_params.get('is_favorited'):
             recipys = [
                 x.recipy for x in Favorite.objects.all()
                 if x.user == self.request.user
@@ -65,7 +68,12 @@ class RecipyViewSet(viewsets.ModelViewSet):
             return RecipyReadSerializer
         return RecipyWriteSerializer
 
-    @action(detail=True, methods=['post', 'delete'], url_path='favorite')
+    @action(
+        detail=True,
+        methods=['post', 'delete'],
+        url_path='favorite',
+        permission_classes=(IsAuthenticated, ),
+        serializer_class= RecipyReadMinimalSerializer)
     def favorite(self, *args, **kwargs):
         """
         URL /recipes/<id>/favorite
@@ -73,13 +81,13 @@ class RecipyViewSet(viewsets.ModelViewSet):
         """
         recipy = get_object_or_404(Recipy, id=self.kwargs.get('pk'))
         if self.request.method == 'POST':
-            serializer = FavoriteSerializer(data=self.request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save(
+            new_favorite = Favorite(
                 user=self.request.user,
                 recipy=recipy
             )
-            serializer.is_valid(raise_exception=True)
+            new_favorite.save()
+            serializer = self.serializer_class(recipy)
+            # serializer.is_valid(raise_exception=True)
             return Response(serializer.data)
 
         elif self.request.method == 'DELETE':
@@ -91,7 +99,11 @@ class RecipyViewSet(viewsets.ModelViewSet):
             favorite_item.delete()
             return Response(status=HTTPStatus.NO_CONTENT)
 
-    @action(detail=True, methods=['post', 'delete'], url_path='shopping_cart')
+    @action(
+        detail=True,
+        methods=['post', 'delete'],
+        url_path='shopping_cart',
+        permission_classes=(IsAuthenticated, ))
     def shopping_cart(self, *args, **kwargs):
         """
         URL /recipes/<id>/shopping_cart
@@ -118,43 +130,38 @@ class RecipyViewSet(viewsets.ModelViewSet):
 
 
 class TagViewSet(viewsets.ModelViewSet):
+    """
+    Вьюсет для работы с тегами.
+    """
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    # permission_classes = (IsAdminOrReadOnlyPermission,)
-    # lookup_field = 'slug'
+    lookup_field = 'id'
     pagination_class = None
-    # filter_backends = (filters.SearchFilter,)
-    # search_fields = ('name',)
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
+    """
+    Вьюсет для работы с ингредиентами.
+    """
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    # permission_classes = (IsAdminOrReadOnlyPermission,)
-    # lookup_field = 'slug'
     pagination_class = None
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
 
 
 class ShoppingCartViewSet(viewsets.ModelViewSet):
-    serializer_class = ShoppingCartReadSerializer
-    # permission_classes = (IsAdminOrReadOnlyPermission,)
-    # lookup_field = 'slug'
-    # pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('user',)
+    """
+    Скачивание списка покупок.
+    """
+    serializer_class = ShoppingCartItemSerializer
+    permission_classes = (IsAuthenticated, )
     queryset = ShoppingCart.objects.all()
-
-    def get_object(self):
-        cart = get_object_or_404(ShoppingCart, user_id=self.request.user.id)
-        return cart
 
     @action(
         methods=['get'],
         detail=True,
-        renderer_classes=(PlainTextRenderer,),
-        serializer_class=ShoppingCartItemSerializer)
+        renderer_classes=(PlainTextRenderer,))
     def download(self, *args, **kwargs):
         user = self.request.user
         current_cart = ShoppingCart.objects.filter(user=user)
@@ -187,14 +194,3 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
             'attachment; filename={0}'.format(filename)
         )
         return response
-
-
-class FavoriteViewSet(viewsets.ModelViewSet):
-    serializer_class = FavoriteSerializer
-    pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('user',)
-
-    def get_queryset(self):
-        user = get_object_or_404(User, username=self.request.user.username)
-        return user.favorite.all()

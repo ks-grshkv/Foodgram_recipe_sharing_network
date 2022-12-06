@@ -5,8 +5,7 @@ from .views import (
     RecipyViewSet,
     TagViewSet,
     IngredientViewSet,
-    ShoppingCartViewSet,
-    FavoriteViewSet)
+    ShoppingCartViewSet)
 
 app_name = 'api'
 
@@ -30,11 +29,6 @@ router.register(
     'cart',
     ShoppingCartViewSet,
     basename='cart',
-)
-router.register(
-    'favorite',
-    FavoriteViewSet,
-    basename='favorite',
 )
 
 urlpatterns = [

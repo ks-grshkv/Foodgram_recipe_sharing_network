@@ -3,6 +3,9 @@ from users.models import User
 
 
 class Tag(models.Model):
+    """
+    Модель тегов для классификации и фильтрации рецептов.
+    """
     name = models.CharField(max_length=256)
     slug = models.SlugField(unique=True, max_length=50)
     color = models.CharField(max_length=7, default="#ffffff")
@@ -30,6 +33,10 @@ class Ingredient(models.Model):
 
 
 class Recipy(models.Model):
+    """
+    Модель рецептов. Property favorited_count показывает
+    общее количество раз, когда рецепт добавили в избранное.
+    """
     name = models.CharField(max_length=256)
     text = models.TextField(
         null=False,
@@ -47,7 +54,7 @@ class Recipy(models.Model):
         null=True,
         blank=True
     )
-    cooking_time = models.IntegerField(
+    cooking_time = models.PositiveSmallIntegerField(
         null=False,
         blank=False,
         verbose_name='Время приготовления, мин'
@@ -80,6 +87,9 @@ class Recipy(models.Model):
 
 
 class IngredientsToRecipe(models.Model):
+    """
+    Смежная модель для свящи Ингредиентов и Рецептов.
+    """
     ingredient = models.ForeignKey(
         Ingredient,
         related_name='ingredients_to_recipy',
@@ -108,6 +118,9 @@ class IngredientsToRecipe(models.Model):
 
 
 class Favorite(models.Model):
+    """
+    Модель для добавления рецептов в избранное.
+    """
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -135,6 +148,9 @@ class Favorite(models.Model):
 
 
 class ShoppingCart(models.Model):
+    """
+    Модель для добавления рецептов в список покупок.
+    """
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -162,6 +178,9 @@ class ShoppingCart(models.Model):
 
 
 class ShoppingCartItem(models.Model):
+    """
+    Модель айтема в списке покупок.
+    """
     cart = models.ForeignKey(
         ShoppingCart,
         on_delete=models.CASCADE,
