@@ -218,13 +218,3 @@ class ShoppingCartReadSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = ShoppingCart
-
-
-class FavoriteSerializer(serializers.ModelSerializer):
-    """
-    Избранные рецепты.
-    """
-
-    class Meta:
-        fields = '__all__'
-        model = Favorite

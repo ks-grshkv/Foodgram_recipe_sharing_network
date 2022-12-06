@@ -14,7 +14,6 @@ from .serializers import (
     RecipyWriteSerializer,
     TagSerializer,
     IngredientSerializer,
-    FavoriteSerializer,
     ShoppingCartItemSerializer,
     ShoppingCartReadSerializer)
 from django.shortcuts import get_object_or_404
@@ -25,6 +24,7 @@ from rest_framework import filters, viewsets
 from rest_framework.response import Response
 from .renderer import PlainTextRenderer
 from .pagination import CustomPagination
+from .filters import CustomFilter
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -38,30 +38,42 @@ class RecipyViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrReadOnlyPermission, )
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ['author', 'tags', ]
+    filterset_fields = ['author',]
+    filter_class = CustomFilter
 
     def get_queryset(self):
         """
         Фильтрация по non-model fields, получение основного
         кверисета рецептов.
         """
+        queryset = Recipy.objects
         if self.request.query_params.get('is_favorited'):
             recipys = [
-                x.recipy for x in Favorite.objects.all()
+                x.recipy.id for x in Favorite.objects.all()
                 if x.user == self.request.user
             ]
-            recipy_ids = [x.id for x in recipys]
-            qs = Recipy.objects.filter(id__in=recipy_ids)
-            return qs
+            queryset = queryset.filter(id__in=recipys)
+
         if self.request.query_params.get('is_in_shopping_cart'):
             recipys = [
-                x.recipy for x in ShoppingCart.objects.all()
+                x.recipy.id for x in ShoppingCart.objects.all()
                 if x.user == self.request.user
             ]
-            recipy_ids = [x.id for x in recipys]
-            qs = Recipy.objects.filter(id__in=recipy_ids)
-            return qs
-        return Recipy.objects.all()
+            queryset = queryset.filter(id__in=recipys)
+
+        tags = self.request.query_params.get('tags')
+        if tags:
+            print(Recipy.objects.get(id=55).tags.all())
+            queryset.filter(tags__slug__in=tags.split(','))
+            print('AAAAAa', tags.split(','))
+
+        #     for tag in tags:
+        #         recipy_ids = [
+        #             x.id for x in Recipy.objects.all()
+        #             if tags in x.tags.all()
+        #         ]
+        #         queryset = queryset.filter(id__in=recipy_ids)
+        return queryset
 
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
