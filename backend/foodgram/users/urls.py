@@ -1,10 +1,8 @@
 from django.urls import include, path
-from .views import (
-    UserGetTokenView,
-    UserViewSet,
-    UserDeleteTokenView,
-    SubscriptionView)
 from rest_framework.routers import SimpleRouter
+
+from .views import (SubscriptionView, UserDeleteTokenView, UserGetTokenView,
+                    UserViewSet)
 
 router = SimpleRouter()
 router.register(

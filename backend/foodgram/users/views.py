@@ -1,18 +1,18 @@
 from http import HTTPStatus
+
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, viewsets
+from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
+
 from api.pagination import CustomPagination
-from .models import User, Subscription
+
+from .models import Subscription, User
 from .permissions import IsAdminorOwner, IsAuth
-from .serializers import (
-    GetTokenSerializer,
-    UserSerializer,
-    UpdatePasswordSerializer,
-    UserFollowWriteSerializer,
-    UserFollowReadSerializer)
+from .serializers import (GetTokenSerializer, UpdatePasswordSerializer,
+                          UserFollowReadSerializer, UserFollowWriteSerializer,
+                          UserSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):

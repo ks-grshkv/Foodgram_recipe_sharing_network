@@ -1,14 +1,10 @@
-from recipes.models import (
-    Recipy,
-    Tag,
-    Ingredient,
-    ShoppingCart,
-    Favorite,
-    IngredientsToRecipe,
-    ShoppingCartItem)
-from users.serializers import UserSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+
+from recipes.models import (Favorite, Ingredient, IngredientsToRecipe, Recipy,
+                            ShoppingCart, ShoppingCartItem, Tag)
+from users.serializers import UserSerializer
+
 from .image_serializer import Base64ImageField
 
 

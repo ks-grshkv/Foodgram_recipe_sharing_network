@@ -1,31 +1,24 @@
-from django.http import HttpResponse
-from recipes.models import (
-    ShoppingCartItem,
-    Recipy,
-    Tag,
-    Ingredient,
-    ShoppingCart,
-    Favorite,
-    IngredientsToRecipe)
-from users.serializers import RecipyReadMinimalSerializer
 from http import HTTPStatus
-from .serializers import (
-    RecipyReadSerializer,
-    RecipyWriteSerializer,
-    TagSerializer,
-    IngredientSerializer,
-    ShoppingCartItemSerializer,
-    ShoppingCartReadSerializer)
+
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from .permissions import IsAuthorOrReadOnlyPermission
-from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
-from rest_framework.response import Response
-from .renderer import PlainTextRenderer
-from .pagination import CustomPagination
-from .filters import RecipyFilter
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from recipes.models import (Favorite, Ingredient, IngredientsToRecipe, Recipy,
+                            ShoppingCart, ShoppingCartItem, Tag)
+from users.serializers import RecipyReadMinimalSerializer
+
+from .filters import RecipyFilter
+from .pagination import CustomPagination
+from .permissions import IsAuthorOrReadOnlyPermission
+from .renderer import PlainTextRenderer
+from .serializers import (IngredientSerializer, RecipyReadSerializer,
+                          RecipyWriteSerializer, ShoppingCartItemSerializer,
+                          ShoppingCartReadSerializer, TagSerializer)
 
 
 class RecipyViewSet(viewsets.ModelViewSet):

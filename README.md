@@ -53,6 +53,8 @@ Activate virtual environment
 
 ```
 python3 -m venv env
+```
+```
 source venv/bin/activate
 ```
 
@@ -60,7 +62,15 @@ Install requirements from requirements.txt:
 
 ```
 python3 -m pip3 install --upgrade pip
+```
+```
 pip3 install -r requirements.txt
+```
+
+Then go to the folder containing manage.py file:
+
+```
+cd backend/foodgram
 ```
 
 Run migrations:

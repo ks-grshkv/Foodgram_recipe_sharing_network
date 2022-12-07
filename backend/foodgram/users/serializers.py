@@ -1,9 +1,11 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from .models import User, Subscription
-from recipes.models import Recipy
+
 from api.image_serializer import Base64ImageField
-from django.shortcuts import get_object_or_404
+from recipes.models import Recipy
+
+from .models import Subscription, User
 
 
 class UserSerializer(serializers.ModelSerializer):
