@@ -24,7 +24,7 @@ from rest_framework import filters, viewsets
 from rest_framework.response import Response
 from .renderer import PlainTextRenderer
 from .pagination import CustomPagination
-from .filters import CustomFilter
+from .filters import RecipyFilter
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -39,14 +39,14 @@ class RecipyViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ['author',]
-    filter_class = CustomFilter
+    filterset_class = RecipyFilter
 
     def get_queryset(self):
         """
         Фильтрация по non-model fields, получение основного
         кверисета рецептов.
         """
-        queryset = Recipy.objects
+        queryset = Recipy.objects.all()
         if self.request.query_params.get('is_favorited'):
             recipys = [
                 x.recipy.id for x in Favorite.objects.all()
@@ -61,18 +61,6 @@ class RecipyViewSet(viewsets.ModelViewSet):
             ]
             queryset = queryset.filter(id__in=recipys)
 
-        tags = self.request.query_params.get('tags')
-        if tags:
-            print(Recipy.objects.get(id=55).tags.all())
-            queryset.filter(tags__slug__in=tags.split(','))
-            print('AAAAAa', tags.split(','))
-
-        #     for tag in tags:
-        #         recipy_ids = [
-        #             x.id for x in Recipy.objects.all()
-        #             if tags in x.tags.all()
-        #         ]
-        #         queryset = queryset.filter(id__in=recipy_ids)
         return queryset
 
     def get_serializer_class(self):
@@ -85,7 +73,7 @@ class RecipyViewSet(viewsets.ModelViewSet):
         methods=['post', 'delete'],
         url_path='favorite',
         permission_classes=(IsAuthenticated, ),
-        serializer_class= RecipyReadMinimalSerializer)
+        serializer_class=RecipyReadMinimalSerializer)
     def favorite(self, *args, **kwargs):
         """
         URL /recipes/<id>/favorite

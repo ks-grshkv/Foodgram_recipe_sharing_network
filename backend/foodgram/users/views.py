@@ -11,7 +11,8 @@ from .serializers import (
     GetTokenSerializer,
     UserSerializer,
     UpdatePasswordSerializer,
-    UserWithRecipesSerializer)
+    UserFollowWriteSerializer,
+    UserFollowReadSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -22,6 +23,17 @@ class UserViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPagination
     queryset = User.objects.all()
     lookup_field = 'id'
+
+    def get_serializer_context(self):
+        """
+        Дополнительные данные для контекста сериализатора.
+        """
+        return {
+            'request': self.request,
+            'format': self.format_kwarg,
+            'view': self,
+            'kwargs': self.kwargs
+        }
 
     def get_object(self):
         queryset = self.get_queryset()
@@ -46,6 +58,9 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({
             "username": self.request.data['username'],
             "email": self.request.data['email'],
+            "id": user.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name
         })
 
     @action(
@@ -82,22 +97,20 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=['post', 'delete'],
         url_path='subscribe',
         permission_classes=(IsAuth, IsAdminorOwner),
-        serializer_class=UserWithRecipesSerializer)
+        serializer_class=UserFollowWriteSerializer)
     def subscribe(self, *args, **kwargs):
         """
-        Подписка и отписка на пользователя.
+        Подписка на пользователя и отписка.
         """
+        context = self.get_serializer_context()
         author = get_object_or_404(User, id=self.kwargs.get('id'))
         if self.request.method == 'POST':
-            new_subscription = Subscription(
-                user=self.request.user,
-                author=author
-            )
-            new_subscription.save()
             serializer = self.serializer_class(
-                new_subscription,
-                context={'request': self.request}
+                data=self.request.data,
+                context=context
             )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
             return Response(serializer.data)
 
         elif self.request.method == 'DELETE':
@@ -135,8 +148,20 @@ class SubscriptionView(viewsets.ModelViewSet):
     """
     Эндпоинт user/subscriptions/ .
     """
-    serializer_class = UserWithRecipesSerializer
+    serializer_class = UserFollowReadSerializer
     pagination_class = CustomPagination
+    permission_classes = (IsAuth, )
+
+    def get_serializer_context(self):
+        """
+        Дополнительные данные для сериализатора.
+        """
+        return {
+            'request': self.request,
+            'format': self.format_kwarg,
+            'view': self,
+            'kwargs': self.kwargs
+        }
 
     def get_queryset(self):
         return Subscription.objects.filter(user=self.request.user)
@@ -163,6 +188,7 @@ class UserGetTokenView(generics.GenericAPIView):
 
         if user.password != password:
             return Response(status=HTTPStatus.BAD_REQUEST)
+        Token.objects.filter(user=user).delete()
         refresh = Token.objects.create(user=user)
         return Response(str(refresh.key))
 
