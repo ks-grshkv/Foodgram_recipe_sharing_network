@@ -7,39 +7,39 @@ Subscribe to other users to keep up with their new recipes.
 
 ### Requests Examples:
 
-Signup for new users:
-###
-POST http://127.0.0.1:8000/api/users/
-Content-Type: application/json
+Signup for new users:  
+###  
+POST http://127.0.0.1:8000/api/users/  
+Content-Type: application/json  
 
-{
-    "username": "test_user",
-    "password": "test_password",
-    "email": "test@email.com",
-    "first_name": "Test",
-    "last_name": "Test"
+{  
+    "username": "test_user",  
+    "password": "test_password",  
+    "email": "test@email.com",  
+    "first_name": "Test",  
+    "last_name": "Test"  
 }
 
-Login:
-###
-POST http://127.0.0.1:8000/api/auth/token/login/
+Login:  
+###  
+POST http://127.0.0.1:8000/api/auth/token/login/  
 Content-Type: application/json
 
-{
-    "password": "test_password",
-    "email": "test@email.com"
-}
+{  
+    "password": "test_password",  
+    "email": "test@email.com"  
+}  
 
-Logout:
-###
-POST  http://127.0.0.1:8000/api/auth/token/logout/
-Content-Type: application/json
-Authorization: Token <insert_token_here>
+Logout:  
+###  
+POST  http://127.0.0.1:8000/api/auth/token/logout/  
+Content-Type: application/json  
+Authorization: Token <insert_token_here>  
 
-All recipes:
-###
-GET http://127.0.0.1:8000/api/recipes/
-Content-Type: application/json
+All recipes:  
+###  
+GET http://127.0.0.1:8000/api/recipes/  
+Content-Type: application/json 
 
 
 ### Launching project :
