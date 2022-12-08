@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-
+from django.db import transaction
 from recipes.models import (Favorite, Ingredient, IngredientsToRecipe, Recipy,
                             ShoppingCart, ShoppingCartItem, Tag)
 from users.serializers import UserSerializer
@@ -128,13 +128,16 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
         model = Recipy
 
     def create_ingredients(self, ingredients, recipy):
+        ingredient_list = []
         IngredientsToRecipe.objects.filter(recipy=recipy).delete()
         for ingredient in ingredients:
             ingredient_obj = get_object_or_404(Ingredient, id=ingredient['id'])
-            IngredientsToRecipe.objects.create(
-                recipy=recipy, ingredient=ingredient_obj,
-                amount=ingredient['amount']
-            )
+            ingredient_list.append(
+                IngredientsToRecipe(
+                    recipy=recipy, ingredient=ingredient_obj,
+                    amount=ingredient['amount'])
+                )
+        IngredientsToRecipe.objects.bulk_create(ingredient_list)
 
     def get_is_favorited(self, instance):
         user = self.context['request'].user
@@ -159,40 +162,24 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
         for tag in tags:
             recipy.tags.add(tag)
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         tags_data = validated_data.pop('tags')
-        name = validated_data.get('name')
-        image = validated_data.get('image')
-        text = validated_data.get('text')
-        cooking_time = validated_data.get('cooking_time')
         ingredients = validated_data.pop('recipy_with_ingredients')
-        recipy = get_object_or_404(Recipy, id=instance.id)
-        recipy.name = name
-        recipy.image = image
-        recipy.text = text
-        recipy.cooking_time = cooking_time
-        self.create_tags(tags_data, recipy)
-        self.create_ingredients(ingredients, recipy)
-        recipy.save()
-        return recipy
+        instance = super().update(instance, validated_data)
+        self.create_tags(tags_data, instance)
+        self.create_ingredients(ingredients, instance)
+        return instance
 
+    @transaction.atomic
     def create(self, validated_data):
         tags_data = validated_data.pop('tags')
-        name = validated_data.get('name')
-        image = validated_data.get('image')
-        text = validated_data.get('text')
-        cooking_time = validated_data.get('cooking_time')
         ingredients = validated_data.pop('recipy_with_ingredients')
-        recipy = Recipy.objects.create(
-            author=self.context['request'].user,
-            name=name,
-            image=image,
-            text=text,
-            cooking_time=cooking_time,
-        )
-        self.create_tags(tags_data, recipy)
-        self.create_ingredients(ingredients, recipy)
-        return recipy
+        validated_data['author'] = self.context['request'].user
+        instance = super().create(validated_data)
+        self.create_tags(tags_data, instance)
+        self.create_ingredients(ingredients, instance)
+        return instance
 
 
 class ShoppingCartItemSerializer(serializers.ModelSerializer):

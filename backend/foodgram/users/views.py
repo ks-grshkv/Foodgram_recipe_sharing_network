@@ -56,11 +56,11 @@ class UserViewSet(viewsets.ModelViewSet):
         )
         user.save()
         return Response({
-            "username": self.request.data['username'],
-            "email": self.request.data['email'],
-            "id": user.id,
-            "first_name": user.first_name,
-            "last_name": user.last_name
+            'username': self.request.data['username'],
+            'email': self.request.data['email'],
+            'id': user.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name
         })
 
     @action(
@@ -105,16 +105,18 @@ class UserViewSet(viewsets.ModelViewSet):
         context = self.get_serializer_context()
         author = get_object_or_404(User, id=self.kwargs.get('id'))
         if self.request.method == 'POST':
+            print('108 vi')
             serializer = self.serializer_class(
                 data=self.request.data,
                 context=context
             )
+            print('108 validating')
             serializer.is_valid(raise_exception=True)
+            print('108 save')
             serializer.save()
             return Response(serializer.data)
 
         elif self.request.method == 'DELETE':
-            print('DELETE', self.request.user, author)
             subscription = get_object_or_404(
                 Subscription,
                 user=self.request.user,
@@ -164,6 +166,7 @@ class SubscriptionView(viewsets.ModelViewSet):
         }
 
     def get_queryset(self):
+        print('166 vie')
         return Subscription.objects.filter(user=self.request.user)
 
 
@@ -186,6 +189,7 @@ class UserGetTokenView(generics.GenericAPIView):
             email=email,
         )
 
+        # print('AAAAAA', user.password, password)
         if user.password != password:
             return Response(status=HTTPStatus.BAD_REQUEST)
         Token.objects.filter(user=user).delete()

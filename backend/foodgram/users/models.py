@@ -37,19 +37,11 @@ class User(AbstractUser):
         default=Roles.user.name,
     )
     following = models.ManyToManyField(
-        "self",
+        'self',
         through='Subscription',
-        related_name="followers",
-        verbose_name="following",
+        related_name='followers',
+        verbose_name='following',
         symmetrical=False)
-
-    @property
-    def is_admin(self):
-        return self.role == Roles.admin.name
-
-    @property
-    def is_user(self):
-        return self.role == Roles.user.name
 
     class Meta:
         ordering = ('-username',)
@@ -58,6 +50,14 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+    @property
+    def is_admin(self):
+        return self.role == Roles.admin.name
+
+    @property
+    def is_user(self):
+        return self.role == Roles.user.name
 
 
 class Subscription(models.Model):

@@ -1,5 +1,5 @@
 from django.db import models
-
+from colorfield.fields import ColorField
 from users.models import User
 
 
@@ -9,7 +9,7 @@ class Tag(models.Model):
     """
     name = models.CharField(max_length=256)
     slug = models.SlugField(unique=True, max_length=50)
-    color = models.CharField(max_length=7, default="#ffffff")
+    color = ColorField(default='#FF0000')
 
     class Meta:
         ordering = ('-name',)
@@ -18,6 +18,9 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
+
+    # def save(self):
+    #     pass
 
 
 class Ingredient(models.Model):
@@ -102,7 +105,7 @@ class IngredientsToRecipe(models.Model):
         null=False,
         verbose_name='Количество'
     )
-    recipy = models.ForeignKey(
+    recipe = models.ForeignKey(
         Recipy,
         related_name='recipy_with_ingredients',
         on_delete=models.CASCADE,
@@ -110,7 +113,7 @@ class IngredientsToRecipe(models.Model):
     )
 
     class Meta:
-        ordering = ('-recipy',)
+        ordering = ('-recipe',)
         verbose_name = 'Ингредиенты к рецептам'
         verbose_name_plural = verbose_name
 
@@ -130,7 +133,7 @@ class Favorite(models.Model):
         null=True,
         verbose_name='Пользователь'
     )
-    recipy = models.ForeignKey(
+    recipe = models.ForeignKey(
         Recipy,
         related_name='favorite',
         on_delete=models.CASCADE,
@@ -160,7 +163,7 @@ class ShoppingCart(models.Model):
         null=True,
         verbose_name='Пользователь'
     )
-    recipy = models.ForeignKey(
+    recipe = models.ForeignKey(
         Recipy,
         related_name='shopping_cart',
         on_delete=models.CASCADE,

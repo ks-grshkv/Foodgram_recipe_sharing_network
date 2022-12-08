@@ -6,12 +6,12 @@ from .views import (SubscriptionView, UserDeleteTokenView, UserGetTokenView,
 
 router = SimpleRouter()
 router.register(
-    'api/users/subscriptions',
+    'subscriptions',
     SubscriptionView,
     basename='subscriptions',
 )
 router.register(
-    'api/users',
+    '',
     UserViewSet,
     basename='users',
 )
@@ -27,11 +27,5 @@ urlpatterns = [
         UserDeleteTokenView.as_view(),
         name='login'
     ),
-    # path(
-    #     'api/users/subscriptions/',
-    #     SubscriptionView.as_view({'get': 'list'}),
-    #     name='subscriptions'
-    # ),
-
-    path('', include(router.urls)),
+    path('api/users/', include(router.urls)),
 ]

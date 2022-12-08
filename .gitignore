@@ -135,4 +135,5 @@ test_requests.http
 
 frontend/node_modules/
 frontend/build/
-backend/recipes/media
+backend/foodgram/recipes/media
+backend/foodgram/staticfiles

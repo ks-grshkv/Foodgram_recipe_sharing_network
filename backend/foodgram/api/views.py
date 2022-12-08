@@ -162,13 +162,17 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
                 recipy=obj.recipy
             ).all()
             for item in ingredients:
-                ingredient = Ingredient.objects.get(id=item.ingredient.id)
+                ingredient = get_object_or_404(
+                    Ingredient,
+                    id=item.ingredient.id
+                )
                 cart_item = ShoppingCartItem.objects.get_or_create(
                     cart=obj,
                     ingredient=ingredient
                 )[0]
                 cart_item.amount += item.amount
                 cart_item.save()
+            # ShoppingCartItem.objects.bulk_create(cart_item_list)
         result = []
         for item in ShoppingCartItem.objects.filter(cart__in=current_cart):
             str = (

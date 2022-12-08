@@ -8,10 +8,10 @@ class IsAdminorOwner(permissions.BasePermission):
             request.user.is_authenticated and request.user.is_admin)
 
     def has_object_permission(self, request, view, obj):
-        verdict = (
-            request.user.is_authenticated and request.user.is_admin
-        ) or request.user.username == obj.user.username
-        return verdict
+        return (
+            (request.user.is_authenticated and request.user.is_admin)
+            or request.user.username == obj.user.username
+        )
 
 
 class IsAuth(permissions.BasePermission):
