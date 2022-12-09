@@ -1,5 +1,5 @@
 from http import HTTPStatus
-
+from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, viewsets
 from rest_framework.authtoken.models import Token
@@ -43,25 +43,27 @@ class UserViewSet(viewsets.ModelViewSet):
         )
         return obj
 
-    def create(self, serializer):
-        serializer = self.serializer_class(data=self.request.data)
-        serializer.is_valid(raise_exception=True)
+    # def create(self, serializer):
+    #     serializer = self.serializer_class(data=self.request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     serializer.save()
 
-        user = User(
-            username=self.request.data['username'],
-            email=self.request.data['email'],
-            password=self.request.data['password'],
-            last_name=self.request.data['last_name'],
-            first_name=self.request.data['first_name'],
-        )
-        user.save()
-        return Response({
-            'username': self.request.data['username'],
-            'email': self.request.data['email'],
-            'id': user.id,
-            'first_name': user.first_name,
-            'last_name': user.last_name
-        })
+        # user = User(
+        #     username=self.request.data['username'],
+        #     email=self.request.data['email'],
+        #     password=self.request.data['password'],
+        #     last_name=self.request.data['last_name'],
+        #     first_name=self.request.data['first_name'],
+        # )
+        # user.save()
+        # return Response(serializer.data)
+        # return Response({
+        #     'username': self.request.data['username'],
+        #     'email': self.request.data['email'],
+        #     'id': user.id,
+        #     'first_name': user.first_name,
+        #     'last_name': user.last_name
+        # })
 
     @action(
         detail=False,
@@ -105,14 +107,11 @@ class UserViewSet(viewsets.ModelViewSet):
         context = self.get_serializer_context()
         author = get_object_or_404(User, id=self.kwargs.get('id'))
         if self.request.method == 'POST':
-            print('108 vi')
             serializer = self.serializer_class(
                 data=self.request.data,
                 context=context
             )
-            print('108 validating')
             serializer.is_valid(raise_exception=True)
-            print('108 save')
             serializer.save()
             return Response(serializer.data)
 
@@ -166,8 +165,7 @@ class SubscriptionView(viewsets.ModelViewSet):
         }
 
     def get_queryset(self):
-        print('166 vie')
-        return Subscription.objects.filter(user=self.request.user)
+        return self.request.user.followers.all()
 
 
 class UserGetTokenView(generics.GenericAPIView):
@@ -184,14 +182,10 @@ class UserGetTokenView(generics.GenericAPIView):
         email = serializer.validated_data.get('email')
         password = serializer.validated_data.get('password')
 
-        user = get_object_or_404(
-            User,
-            email=email,
-        )
-
-        # print('AAAAAA', user.password, password)
-        if user.password != password:
+        user = authenticate(email=email, password=password)
+        if not user:
             return Response(status=HTTPStatus.BAD_REQUEST)
+
         Token.objects.filter(user=user).delete()
         refresh = Token.objects.create(user=user)
         return Response(str(refresh.key))

@@ -1,11 +1,11 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from django.db import transaction
-from recipes.models import (Favorite, Ingredient, IngredientsToRecipe, Recipy,
+from recipes.models import (Favorite, Ingredient, IngredientsToRecipe, Recipe,
                             ShoppingCart, ShoppingCartItem, Tag)
 from users.serializers import UserSerializer
 
-from .image_serializer import Base64ImageField
+from drf_extra_fields.fields import Base64ImageField
 
 
 class IngredientPrimaryKeyRelatedField(serializers.RelatedField):
@@ -14,11 +14,11 @@ class IngredientPrimaryKeyRelatedField(serializers.RelatedField):
     а не записи в связной модели IngredientsToRecipe.
     """
     def to_representation(self, instance):
-        ingredient_in_recipy = get_object_or_404(
+        ingredient_in_recipe = get_object_or_404(
             IngredientsToRecipe,
             id=instance
         )
-        return ingredient_in_recipy.ingredient.id
+        return ingredient_in_recipe.ingredient.id
 
     def to_internal_value(self, value):
         return value
@@ -76,14 +76,14 @@ class IngredientsToRecipeSerializer(serializers.ModelSerializer):
         return ingredient.name
 
 
-class RecipyReadSerializer(serializers.ModelSerializer):
+class RecipeReadSerializer(serializers.ModelSerializer):
     """
     Чтение рецепта.
     """
     author = UserSerializer()
     ingredients = IngredientsToRecipeSerializer(
         many=True,
-        source='recipy_with_ingredients'
+        source='recipe_with_ingredients'
     )
     tags = TagSerializer(
         many=True
@@ -94,29 +94,29 @@ class RecipyReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = '__all__'
-        model = Recipy
+        model = Recipe
 
     def get_is_favorited(self, instance):
         user = self.context['request'].user
         if user.is_anonymous:
             return False
-        return Favorite.objects.filter(user=user, recipy=instance).exists()
+        return Favorite.objects.filter(user=user, recipe=instance).exists()
 
     def get_is_in_shopping_cart(self, instance):
         user = self.context['request'].user
         if user.is_anonymous:
             return False
-        return ShoppingCart.objects.filter(user=user, recipy=instance).exists()
+        return ShoppingCart.objects.filter(user=user, recipe=instance).exists()
 
 
-class RecipyWriteSerializer(serializers.ModelSerializer):
+class RecipeWriteSerializer(serializers.ModelSerializer):
     """
     Создание и редактирование рецепта.
     """
     author = serializers.SerializerMethodField()
     ingredients = IngredientsToRecipeSerializer(
         many=True,
-        source='recipy_with_ingredients'
+        source='recipe_with_ingredients'
     )
     tags = TagsPrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True)
     image = Base64ImageField(max_length=None, use_url=True)
@@ -125,16 +125,16 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = '__all__'
-        model = Recipy
+        model = Recipe
 
-    def create_ingredients(self, ingredients, recipy):
+    def create_ingredients(self, ingredients, recipe):
         ingredient_list = []
-        IngredientsToRecipe.objects.filter(recipy=recipy).delete()
+        IngredientsToRecipe.objects.filter(recipe=recipe).delete()
         for ingredient in ingredients:
             ingredient_obj = get_object_or_404(Ingredient, id=ingredient['id'])
             ingredient_list.append(
                 IngredientsToRecipe(
-                    recipy=recipy, ingredient=ingredient_obj,
+                    recipe=recipe, ingredient=ingredient_obj,
                     amount=ingredient['amount'])
                 )
         IngredientsToRecipe.objects.bulk_create(ingredient_list)
@@ -143,7 +143,7 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         if user.is_anonymous:
             return False
-        return Favorite.objects.filter(user=user, recipy=instance).exists()
+        return Favorite.objects.filter(user=user, recipe=instance).exists()
 
     def get_author(self, *args):
         serializer = UserSerializer(self.context['request'].user)
@@ -153,19 +153,19 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         if user.is_anonymous:
             return False
-        return ShoppingCart.objects.filter(user=user, recipy=instance).exists()
+        return ShoppingCart.objects.filter(user=user, recipe=instance).exists()
 
-    def create_tags(self, tags, recipy):
-        current_tags = recipy.tags.all()
+    def create_tags(self, tags, recipe):
+        current_tags = recipe.tags.all()
         for current_tag in current_tags:
-            recipy.tags.remove(current_tag)
+            recipe.tags.remove(current_tag)
         for tag in tags:
-            recipy.tags.add(tag)
+            recipe.tags.add(tag)
 
     @transaction.atomic
     def update(self, instance, validated_data):
         tags_data = validated_data.pop('tags')
-        ingredients = validated_data.pop('recipy_with_ingredients')
+        ingredients = validated_data.pop('recipe_with_ingredients')
         instance = super().update(instance, validated_data)
         self.create_tags(tags_data, instance)
         self.create_ingredients(ingredients, instance)
@@ -174,7 +174,7 @@ class RecipyWriteSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         tags_data = validated_data.pop('tags')
-        ingredients = validated_data.pop('recipy_with_ingredients')
+        ingredients = validated_data.pop('recipe_with_ingredients')
         validated_data['author'] = self.context['request'].user
         instance = super().create(validated_data)
         self.create_tags(tags_data, instance)

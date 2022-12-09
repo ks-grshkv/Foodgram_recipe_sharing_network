@@ -1,16 +1,15 @@
 from django.contrib import admin
 
-from .models import (Favorite, Ingredient, IngredientsToRecipe, Recipy,
+from .models import (Favorite, Ingredient, Recipe,
                      ShoppingCart, Tag)
 
 
-# @admin.register(IngredientsToRecipe)
 class IngredientsToRecipeInline(admin.TabularInline):
-    model = Recipy.ingredients.through
+    model = Recipe.ingredients.through
 
 
-@admin.register(Recipy)
-class RecipyAdmin(admin.ModelAdmin):
+@admin.register(Recipe)
+class RecipeAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'author',

@@ -1,15 +1,42 @@
 from django.db import models
 from colorfield.fields import ColorField
 from users.models import User
+from django.utils.text import slugify
 
 
 class Tag(models.Model):
     """
     Модель тегов для классификации и фильтрации рецептов.
     """
-    name = models.CharField(max_length=256)
-    slug = models.SlugField(unique=True, max_length=50)
-    color = ColorField(default='#FF0000')
+    name = models.CharField(
+        verbose_name='Название тега',
+        max_length=256,
+        unique=True,
+        null=False,
+        blank=False
+    )
+    color = ColorField(
+        verbose_name='Цвет тега',
+        default='#FF0000',
+        unique=True,
+        null=False,
+        blank=False
+    )
+    slug = models.SlugField(
+        verbose_name='Слаг тега',
+        unique=True,
+        max_length=50,
+        null=False,
+        blank=False
+    )
+
+    def save(self, *args, **kwargs):
+        """
+        На всякий случай делает slugify поля slug
+        перед сохранением в БД.
+        """
+        self.slug = slugify(self.slug)
+        super(Tag, self).save(*args, **kwargs)
 
     class Meta:
         ordering = ('-name',)
@@ -19,13 +46,19 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
-    # def save(self):
-    #     pass
-
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=256, verbose_name='Название')
-    measurement_unit = models.CharField(max_length=256, verbose_name='Единицы')
+    name = models.CharField(
+        max_length=256,
+        verbose_name='Название',
+        unique=True,
+        null=False,
+        blank=False)
+    measurement_unit = models.CharField(
+        max_length=256,
+        null=False,
+        blank=False,
+        verbose_name='Единицы')
 
     class Meta:
         ordering = ('-name',)
@@ -36,12 +69,15 @@ class Ingredient(models.Model):
         return f'{self.name}, {self.measurement_unit}'
 
 
-class Recipy(models.Model):
+class Recipe(models.Model):
     """
     Модель рецептов. Property favorited_count показывает
     общее количество раз, когда рецепт добавили в избранное.
     """
-    name = models.CharField(max_length=256)
+    name = models.CharField(
+        max_length=256,
+        null=False,
+        blank=False)
     text = models.TextField(
         null=False,
         blank=False,
@@ -55,8 +91,8 @@ class Recipy(models.Model):
     image = models.ImageField(
         verbose_name='Изображение',
         upload_to='recipes/media/',
-        null=True,
-        blank=True
+        null=False,
+        blank=False
     )
     cooking_time = models.PositiveSmallIntegerField(
         null=False,
@@ -87,7 +123,7 @@ class Recipy(models.Model):
 
     @property
     def favorited_count(self):
-        return Favorite.objects.filter(recipy=self).count()
+        return Favorite.objects.filter(recipe=self).count()
 
 
 class IngredientsToRecipe(models.Model):
@@ -96,7 +132,7 @@ class IngredientsToRecipe(models.Model):
     """
     ingredient = models.ForeignKey(
         Ingredient,
-        related_name='ingredients_to_recipy',
+        related_name='ingredients_to_recipe',
         on_delete=models.CASCADE,
         verbose_name='Ингредиент'
     )
@@ -106,8 +142,8 @@ class IngredientsToRecipe(models.Model):
         verbose_name='Количество'
     )
     recipe = models.ForeignKey(
-        Recipy,
-        related_name='recipy_with_ingredients',
+        Recipe,
+        related_name='recipe_with_ingredients',
         on_delete=models.CASCADE,
         verbose_name='Рецепт'
     )
@@ -118,7 +154,7 @@ class IngredientsToRecipe(models.Model):
         verbose_name_plural = verbose_name
 
     def __str__(self):
-        return f'{self.recipy} <- {self.ingredient.name}'
+        return f'{self.recipe} <- {self.ingredient.name}'
 
 
 class Favorite(models.Model):
@@ -134,7 +170,7 @@ class Favorite(models.Model):
         verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
-        Recipy,
+        Recipe,
         related_name='favorite',
         on_delete=models.CASCADE,
         blank=True,
@@ -148,7 +184,7 @@ class Favorite(models.Model):
         verbose_name_plural = verbose_name
 
     def __str__(self):
-        return f'{self.user} likes {self.recipy}'
+        return f'{self.user} likes {self.recipe}'
 
 
 class ShoppingCart(models.Model):
@@ -164,7 +200,7 @@ class ShoppingCart(models.Model):
         verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
-        Recipy,
+        Recipe,
         related_name='shopping_cart',
         on_delete=models.CASCADE,
         blank=True,
@@ -178,7 +214,7 @@ class ShoppingCart(models.Model):
         verbose_name_plural = verbose_name
 
     def __str__(self):
-        return f'{self.user} buys {self.recipy}'
+        return f'{self.user} buys {self.recipe}'
 
 
 class ShoppingCartItem(models.Model):

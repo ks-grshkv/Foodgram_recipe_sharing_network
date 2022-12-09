@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
-from .views import (IngredientViewSet, RecipyViewSet, ShoppingCartViewSet,
+from .views import (IngredientViewSet, RecipeViewSet, ShoppingCartViewSet,
                     TagViewSet)
 
 app_name = 'api'
@@ -9,7 +9,7 @@ app_name = 'api'
 router = SimpleRouter()
 router.register(
     'recipes',
-    RecipyViewSet,
+    RecipeViewSet,
     basename='recipes',
 )
 router.register(
@@ -29,5 +29,5 @@ router.register(
 )
 
 urlpatterns = [
-    path('/', include(router.urls)),
+    path('', include(router.urls)),
 ]

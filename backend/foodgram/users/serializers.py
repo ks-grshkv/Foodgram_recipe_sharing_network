@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.db import transaction
 from api.image_serializer import Base64ImageField
-from recipes.models import Recipy
+from recipes.models import Recipe
 
 from .models import Subscription, User
 
@@ -25,11 +25,19 @@ class UserSerializer(serializers.ModelSerializer):
     )
     is_subscribed = serializers.SerializerMethodField()
 
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = super().create(validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
     class Meta:
         fields = (
             'id',
             'username',
             'email',
+            'password',
             'first_name',
             'last_name',
             'is_subscribed'
@@ -89,7 +97,7 @@ class UpdatePasswordSerializer(serializers.ModelSerializer):
         return data
 
 
-class RecipyReadMinimalSerializer(serializers.ModelSerializer):
+class RecipeReadMinimalSerializer(serializers.ModelSerializer):
     """
     Сериализатор для краткой информации о рецепте.
     Используется во вложенных рецептах (например, в users/subscriptions).
@@ -98,25 +106,23 @@ class RecipyReadMinimalSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = ('id', 'name', 'image', 'cooking_time',)
-        model = Recipy
+        model = Recipe
 
 
-class UserPrimaryKeyRelatedField(serializers.RelatedField):
-    """
-    Помогает вывести правильный id ингредиента,
-    а не записи в связной модели IngredientsToRecipe.
-    """
-    def to_representation(self, instance):
-        print('AAAA 108 ser', instance)
-        author = get_object_or_404(Subscription, id=instance).author
-        return author.id
+# class UserPrimaryKeyRelatedField(serializers.RelatedField):
+#     """
+#     Помогает вывести правильный id ингредиента,
+#     а не записи в связной модели IngredientsToRecipe.
+#     """
+#     def to_representation(self, instance):
+#         author = get_object_or_404(Subscription, id=instance).author
+#         return UserSerializer(author).data
 
-    def to_internal_value(self, value):
-        print('AAAA 116 ser', value)
-        return value
+#     def to_internal_value(self, value):
+#         return value
 
 
-class UserFollowWriteSerializer(serializers.ModelSerializer):
+class UserFollowWriteSerializer(UserSerializer):
     """
     Сериализатор для пользователя со вложенными рецептами.
     Используется для создания подписок.
@@ -124,48 +130,45 @@ class UserFollowWriteSerializer(serializers.ModelSerializer):
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
     is_subscribed = serializers.SerializerMethodField()
-    # id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    # username = serializers.SerializerMethodField()
-    # email = serializers.SerializerMethodField()
-    # last_name = serializers.SerializerMethodField()
-    # first_name = serializers.SerializerMethodField()
+
+    email = serializers.CharField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    last_name = serializers.CharField(read_only=True)
+    first_name = serializers.CharField(read_only=True)
 
     class Meta:
         fields = (
             'id',
-            # 'username',
-            # 'email',
-            # 'first_name',
-            # 'last_name',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
             'recipes_count',
             'recipes',
             'is_subscribed'
         )
-        model = Subscription
+        model = User
 
     def identify_author(self, instance):
-        print('133 ser')
         return get_object_or_404(User, id=self.context['kwargs'].get('id'))
 
     def get_recipes(self, instance):
-        print('135 ser')
         request = self.context['request']
         recipes_limit = request.query_params.get('recipes_limit')
         if recipes_limit:
-            serializer = RecipyReadMinimalSerializer(
+            serializer = RecipeReadMinimalSerializer(
                 self.identify_author(
                     instance).recipes.all()[:int(recipes_limit)],
                 many=True
             )
         else:
-            serializer = RecipyReadMinimalSerializer(
+            serializer = RecipeReadMinimalSerializer(
                 self.identify_author(instance).recipes.all(),
                 many=True
             )
         return serializer.data
 
     def validate(self, data):
-        print('152 ser')
         user = self.context['request'].user
         author = get_object_or_404(
             User,
@@ -184,7 +187,6 @@ class UserFollowWriteSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        print('169 ser')
         user = self.context['request'].user
         author = self.identify_author(validated_data)
         new_subscription = Subscription(
@@ -192,29 +194,12 @@ class UserFollowWriteSerializer(serializers.ModelSerializer):
             author=author
         )
         new_subscription.save()
-        return new_subscription
-
-    # def get_id(self, instance):
-    #     return self.identify_author(instance).id
-
-    # def get_username(self, instance):
-    #     return self.identify_author(instance).username
-
-    # def get_first_name(self, instance):
-    #     return self.identify_author(instance).first_name
-
-    # def get_last_name(self, instance):
-    #     return self.identify_author(instance).last_name
-
-    # def get_email(self, instance):
-    #     return self.identify_author(instance).email
+        return author
 
     def get_recipes_count(self, instance):
-        print('194 ser')
         return self.identify_author(instance).recipes.count()
 
     def get_is_subscribed(self, instance):
-        print('197 ser')
         user = self.context['request'].user
         if user.is_anonymous:
             return False
@@ -230,9 +215,6 @@ class UserFollowReadSerializer(UserFollowWriteSerializer):
     Используется для отображения существующих подписок
     Текущего пользователя.
     """
-    id = UserPrimaryKeyRelatedField(queryset=User.objects.all())
-    # id = UserSerializer()
 
     def identify_author(self, instance):
-        print('213 ser')
-        return instance.author
+        return instance

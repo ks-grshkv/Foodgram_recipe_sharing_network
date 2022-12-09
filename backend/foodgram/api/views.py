@@ -8,20 +8,20 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.models import (Favorite, Ingredient, IngredientsToRecipe, Recipy,
+from recipes.models import (Favorite, Ingredient, IngredientsToRecipe, Recipe,
                             ShoppingCart, ShoppingCartItem, Tag)
-from users.serializers import RecipyReadMinimalSerializer
+from users.serializers import RecipeReadMinimalSerializer
 
-from .filters import RecipyFilter
+from .filters import RecipeFilter
 from .pagination import CustomPagination
 from .permissions import IsAuthorOrReadOnlyPermission
 from .renderer import PlainTextRenderer
-from .serializers import (IngredientSerializer, RecipyReadSerializer,
-                          RecipyWriteSerializer, ShoppingCartItemSerializer,
+from .serializers import (IngredientSerializer, RecipeReadSerializer,
+                          RecipeWriteSerializer, ShoppingCartItemSerializer,
                           ShoppingCartReadSerializer, TagSerializer)
 
 
-class RecipyViewSet(viewsets.ModelViewSet):
+class RecipeViewSet(viewsets.ModelViewSet):
     """
     Вьюсет для работы с рецептами.
     Основные методы обеспечивают CRUD-операции,
@@ -32,61 +32,61 @@ class RecipyViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ['author',]
-    filterset_class = RecipyFilter
+    filterset_class = RecipeFilter
 
     def get_queryset(self):
         """
         Фильтрация по non-model fields, получение основного
         кверисета рецептов.
         """
-        queryset = Recipy.objects.all()
-        if self.request.query_params.get('is_favorited'):
-            recipys = [
-                x.recipy.id for x in Favorite.objects.all()
-                if x.user == self.request.user
-            ]
-            queryset = queryset.filter(id__in=recipys)
+        queryset = Recipe.objects.all()
+        # if self.request.query_params.get('is_favorited'):
+        #     recipes = [
+        #         x.recipe.id for x in Favorite.objects.all()
+        #         if x.user == self.request.user
+        #     ]
+        #     queryset = queryset.filter(id__in=recipes)
 
-        if self.request.query_params.get('is_in_shopping_cart'):
-            recipys = [
-                x.recipy.id for x in ShoppingCart.objects.all()
-                if x.user == self.request.user
-            ]
-            queryset = queryset.filter(id__in=recipys)
+        # if self.request.query_params.get('is_in_shopping_cart'):
+        #     recipes = [
+        #         x.recipe.id for x in ShoppingCart.objects.all()
+        #         if x.user == self.request.user
+        #     ]
+        #     queryset = queryset.filter(id__in=recipes)
 
         return queryset
 
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
-            return RecipyReadSerializer
-        return RecipyWriteSerializer
+            return RecipeReadSerializer
+        return RecipeWriteSerializer
 
     @action(
         detail=True,
         methods=['post', 'delete'],
         url_path='favorite',
         permission_classes=(IsAuthenticated, ),
-        serializer_class=RecipyReadMinimalSerializer)
+        serializer_class=RecipeReadMinimalSerializer)
     def favorite(self, *args, **kwargs):
         """
         URL /recipes/<id>/favorite
         Добавить рецепт в избранное, удалить из избранного.
         """
-        recipy = get_object_or_404(Recipy, id=self.kwargs.get('pk'))
+        recipe = get_object_or_404(Recipe, id=self.kwargs.get('pk'))
         if self.request.method == 'POST':
             new_favorite = Favorite(
                 user=self.request.user,
-                recipy=recipy
+                recipe=recipe
             )
             new_favorite.save()
-            serializer = self.serializer_class(recipy)
+            serializer = self.serializer_class(recipe)
             return Response(serializer.data)
 
         elif self.request.method == 'DELETE':
             favorite_item = get_object_or_404(
                 Favorite,
                 user=self.request.user,
-                recipy=recipy
+                recipe=recipe
             )
             favorite_item.delete()
             return Response(status=HTTPStatus.NO_CONTENT)
@@ -101,13 +101,13 @@ class RecipyViewSet(viewsets.ModelViewSet):
         URL /recipes/<id>/shopping_cart
         Добавить рецепт в список покупок, удалить из списка покупок.
         """
-        recipy = get_object_or_404(Recipy, id=self.kwargs.get('pk'))
+        recipe = get_object_or_404(Recipe, id=self.kwargs.get('pk'))
         if self.request.method == 'POST':
             serializer = ShoppingCartReadSerializer(data=self.request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save(
                 user=self.request.user,
-                recipy=recipy
+                recipe=recipe
             )
             return Response(serializer.data)
 
@@ -115,7 +115,7 @@ class RecipyViewSet(viewsets.ModelViewSet):
             shopping_cart_item = get_object_or_404(
                 ShoppingCart,
                 user=self.request.user,
-                recipy=recipy
+                recipe=recipe
             )
             shopping_cart_item.delete()
             return Response(status=HTTPStatus.NO_CONTENT)
@@ -159,7 +159,7 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
         current_cart = ShoppingCart.objects.filter(user=user)
         for obj in current_cart:
             ingredients = IngredientsToRecipe.objects.filter(
-                recipy=obj.recipy
+                recipe=obj.recipe
             ).all()
             for item in ingredients:
                 ingredient = get_object_or_404(
