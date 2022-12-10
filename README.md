@@ -85,3 +85,21 @@ and start the project:
 ```
 python3 manage.py runserver
 ```
+
+## Run in docker-compose
+
+```
+cd infra
+
+# execute when you run app with config that builds all the stuff localy
+docker-compose up --detach --build 
+
+docker-compose exec backend python manage.py migrate
+docker-compose exec backend python manage.py createsuperuser
+docker-compose exec backend python manage.py collectstatic --no-input
+
+# stop and purge all the data
+docker-compose down -v
+```
+
+!! API_URL to .env
