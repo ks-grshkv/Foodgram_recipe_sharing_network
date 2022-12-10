@@ -109,19 +109,6 @@ class RecipeReadMinimalSerializer(serializers.ModelSerializer):
         model = Recipe
 
 
-# class UserPrimaryKeyRelatedField(serializers.RelatedField):
-#     """
-#     Помогает вывести правильный id ингредиента,
-#     а не записи в связной модели IngredientsToRecipe.
-#     """
-#     def to_representation(self, instance):
-#         author = get_object_or_404(Subscription, id=instance).author
-#         return UserSerializer(author).data
-
-#     def to_internal_value(self, value):
-#         return value
-
-
 class UserFollowWriteSerializer(UserSerializer):
     """
     Сериализатор для пользователя со вложенными рецептами.

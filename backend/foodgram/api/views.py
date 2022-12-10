@@ -9,15 +9,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import (Favorite, Ingredient, IngredientsToRecipe, Recipe,
-                            ShoppingCart, ShoppingCartItem, Tag)
+                            ShoppingCart, Tag)
 from users.serializers import RecipeReadMinimalSerializer
 
 from .filters import RecipeFilter
 from .pagination import CustomPagination
 from .permissions import IsAuthorOrReadOnlyPermission
 from .renderer import PlainTextRenderer
-from .serializers import (IngredientSerializer, RecipeReadSerializer,
-                          RecipeWriteSerializer, ShoppingCartItemSerializer,
+from .serializers import (IngredientSerializer,
+                          RecipeReadSerializer,
+                          FavoriteSerializer,
+                          RecipeWriteSerializer,
                           ShoppingCartReadSerializer, TagSerializer)
 
 
@@ -34,28 +36,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_fields = ['author',]
     filterset_class = RecipeFilter
 
-    def get_queryset(self):
-        """
-        Фильтрация по non-model fields, получение основного
-        кверисета рецептов.
-        """
-        queryset = Recipe.objects.all()
-        # if self.request.query_params.get('is_favorited'):
-        #     recipes = [
-        #         x.recipe.id for x in Favorite.objects.all()
-        #         if x.user == self.request.user
-        #     ]
-        #     queryset = queryset.filter(id__in=recipes)
-
-        # if self.request.query_params.get('is_in_shopping_cart'):
-        #     recipes = [
-        #         x.recipe.id for x in ShoppingCart.objects.all()
-        #         if x.user == self.request.user
-        #     ]
-        #     queryset = queryset.filter(id__in=recipes)
-
-        return queryset
-
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
             return RecipeReadSerializer
@@ -67,6 +47,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='favorite',
         permission_classes=(IsAuthenticated, ),
         serializer_class=RecipeReadMinimalSerializer)
+        #FavoriteSerializer
     def favorite(self, *args, **kwargs):
         """
         URL /recipes/<id>/favorite
@@ -95,6 +76,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=True,
         methods=['post', 'delete'],
         url_path='shopping_cart',
+        serializer_class=ShoppingCartReadSerializer,
         permission_classes=(IsAuthenticated, ))
     def shopping_cart(self, *args, **kwargs):
         """
@@ -103,12 +85,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """
         recipe = get_object_or_404(Recipe, id=self.kwargs.get('pk'))
         if self.request.method == 'POST':
+            print('AAASFDDFDFSF')
             serializer = ShoppingCartReadSerializer(data=self.request.data)
+            print('NBVCXVCXVXV')
             serializer.is_valid(raise_exception=True)
+            print('BBBBBBBBBBBb')
             serializer.save(
                 user=self.request.user,
                 recipe=recipe
             )
+            # проверка на то что можно 1 раз добавить рецепт в шк
             return Response(serializer.data)
 
         elif self.request.method == 'DELETE':
@@ -119,6 +105,51 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
             shopping_cart_item.delete()
             return Response(status=HTTPStatus.NO_CONTENT)
+
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='download_shopping_cart',
+        renderer_classes=(PlainTextRenderer, ),
+        permission_classes=(IsAuthenticated, ))
+    def download_shopping_cart(self, *args, **kwargs):
+        """
+        URL /recipes/download_shopping_cart
+        Cкачать список покупок.
+        """
+        user = self.request.user
+        current_cart = ShoppingCart.objects.filter(user=user)
+        cart_dict = {}
+        for obj in current_cart:
+            ingredients = IngredientsToRecipe.objects.filter(
+                recipe=obj.recipe
+            ).all()
+            for item in ingredients:
+                ingredient = get_object_or_404(
+                    Ingredient,
+                    id=item.ingredient.id
+                )
+                try:
+                    cart_dict[ingredient] += item.amount
+                except Exception:
+                    cart_dict[ingredient] = 0
+                    cart_dict[ingredient] += item.amount
+
+        result = []
+        for item in cart_dict.keys():
+            str = (
+                f'{item} : {cart_dict[item]}\n'
+            )
+            result.append(str)
+
+        filename = 'shopping_list.txt'
+        response = HttpResponse(
+            result, content_type='text/plain; charset=UTF-8'
+        )
+        response['Content-Disposition'] = (
+            'attachment; filename={0}'.format(filename)
+        )
+        return response
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -137,56 +168,6 @@ class IngredientViewSet(viewsets.ModelViewSet):
     """
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    pagination_class = None
+    # pagination_class = None
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
-
-
-class ShoppingCartViewSet(viewsets.ModelViewSet):
-    """
-    Скачивание списка покупок.
-    """
-    serializer_class = ShoppingCartItemSerializer
-    permission_classes = (IsAuthenticated, )
-    queryset = ShoppingCart.objects.all()
-
-    @action(
-        methods=['get'],
-        detail=True,
-        renderer_classes=(PlainTextRenderer,))
-    def download(self, *args, **kwargs):
-        user = self.request.user
-        current_cart = ShoppingCart.objects.filter(user=user)
-        for obj in current_cart:
-            ingredients = IngredientsToRecipe.objects.filter(
-                recipe=obj.recipe
-            ).all()
-            for item in ingredients:
-                ingredient = get_object_or_404(
-                    Ingredient,
-                    id=item.ingredient.id
-                )
-                cart_item = ShoppingCartItem.objects.get_or_create(
-                    cart=obj,
-                    ingredient=ingredient
-                )[0]
-                cart_item.amount += item.amount
-                cart_item.save()
-            # ShoppingCartItem.objects.bulk_create(cart_item_list)
-        result = []
-        for item in ShoppingCartItem.objects.filter(cart__in=current_cart):
-            str = (
-                f'{item.ingredient.name}'
-                f': {item.amount} {item.ingredient.measurement_unit};\n'
-            )
-            result.append(str)
-        cart_item.delete()
-
-        filename = 'shopping_list.txt'
-        response = HttpResponse(
-            result, content_type='text/plain; charset=UTF-8'
-        )
-        response['Content-Disposition'] = (
-            'attachment; filename={0}'.format(filename)
-        )
-        return response

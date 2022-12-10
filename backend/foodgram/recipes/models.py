@@ -215,27 +215,3 @@ class ShoppingCart(models.Model):
 
     def __str__(self):
         return f'{self.user} buys {self.recipe}'
-
-
-class ShoppingCartItem(models.Model):
-    """
-    Модель айтема в списке покупок.
-    """
-    cart = models.ForeignKey(
-        ShoppingCart,
-        on_delete=models.CASCADE,
-        related_name='shopping_cart_items',
-        blank=True,
-        null=True,
-    )
-    ingredient = models.ForeignKey(
-        Ingredient,
-        related_name='ingredient_to_buy',
-        on_delete=models.CASCADE
-    )
-    amount = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        ordering = ('-cart',)
-        verbose_name = 'Список покупок'
-        verbose_name_plural = verbose_name

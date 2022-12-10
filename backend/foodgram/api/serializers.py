@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from django.db import transaction
 from recipes.models import (Favorite, Ingredient, IngredientsToRecipe, Recipe,
-                            ShoppingCart, ShoppingCartItem, Tag)
+                            ShoppingCart, Tag)
 from users.serializers import UserSerializer
 
 from drf_extra_fields.fields import Base64ImageField
@@ -182,22 +182,43 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ShoppingCartItemSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор объектов в списке покупок.
-    """
-    measurement_unit = serializers.SerializerMethodField()
-
-    class Meta:
-        fields = ('ingredient', 'amount', 'measurement_unit')
-        model = ShoppingCartItem
-
-    def get_measurement_unit(self, instance):
-        return instance.ingredient.measurement_unit
-
-
 class ShoppingCartReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = '__all__'
         model = ShoppingCart
+
+    def validate(self, data):
+        print('VALIDATEEEE')
+        user = self.context['request'].user
+        recipe = get_object_or_404(
+            Recipe,
+            id=self.context['kwargs'].get('id')
+        )
+
+        if ShoppingCart.objects.filter(user=user, recipe=recipe):
+            raise serializers.ValidationError(
+                'Рецепт уже добавлен список покупок!'
+            )
+        return data
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = '__all__'
+        model = Favorite
+
+    def validate(self, data):
+        print('VALIDATEEEE')
+        user = self.context['request'].user
+        recipe = get_object_or_404(
+            Recipe,
+            id=self.context['kwargs'].get('id')
+        )
+
+        if Favorite.objects.filter(user=user, recipe=recipe):
+            raise serializers.ValidationError(
+                'Рецепт уже добавлен в избранное!'
+            )
+        return data
