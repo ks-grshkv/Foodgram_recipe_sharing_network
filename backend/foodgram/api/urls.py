@@ -21,11 +21,6 @@ router.register(
     IngredientViewSet,
     basename='ingredients',
 )
-# router.register(
-#     'download_shopping_cart',
-#     ShoppingCartViewSet,
-#     basename='download_shopping_cart',
-# )
 
 urlpatterns = [
     path('', include(router.urls)),

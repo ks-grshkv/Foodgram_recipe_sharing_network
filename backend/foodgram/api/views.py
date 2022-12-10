@@ -18,9 +18,8 @@ from .permissions import IsAuthorOrReadOnlyPermission
 from .renderer import PlainTextRenderer
 from .serializers import (IngredientSerializer,
                           RecipeReadSerializer,
-                          FavoriteSerializer,
                           RecipeWriteSerializer,
-                          ShoppingCartReadSerializer, TagSerializer)
+                          TagSerializer)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -34,6 +33,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ['author',]
+    queryset = Recipe.objects.all()
     filterset_class = RecipeFilter
 
     def get_serializer_class(self):
@@ -41,26 +41,38 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeReadSerializer
         return RecipeWriteSerializer
 
+    def get_serializer_context(self):
+        """
+        Дополнительные данные для контекста сериализатора.
+        """
+        return {
+            'request': self.request,
+            'format': self.format_kwarg,
+            'view': self,
+            'kwargs': self.kwargs
+        }
+
     @action(
         detail=True,
         methods=['post', 'delete'],
         url_path='favorite',
         permission_classes=(IsAuthenticated, ),
         serializer_class=RecipeReadMinimalSerializer)
-        #FavoriteSerializer
     def favorite(self, *args, **kwargs):
         """
         URL /recipes/<id>/favorite
         Добавить рецепт в избранное, удалить из избранного.
         """
         recipe = get_object_or_404(Recipe, id=self.kwargs.get('pk'))
+        context = self.get_serializer_context()
+        context['action'] = 'favorite'
         if self.request.method == 'POST':
-            new_favorite = Favorite(
-                user=self.request.user,
-                recipe=recipe
+            serializer = self.serializer_class(
+                data=self.request.data,
+                context=context
             )
-            new_favorite.save()
-            serializer = self.serializer_class(recipe)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
             return Response(serializer.data)
 
         elif self.request.method == 'DELETE':
@@ -76,7 +88,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=True,
         methods=['post', 'delete'],
         url_path='shopping_cart',
-        serializer_class=ShoppingCartReadSerializer,
+        serializer_class=RecipeReadMinimalSerializer,
         permission_classes=(IsAuthenticated, ))
     def shopping_cart(self, *args, **kwargs):
         """
@@ -84,17 +96,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
         Добавить рецепт в список покупок, удалить из списка покупок.
         """
         recipe = get_object_or_404(Recipe, id=self.kwargs.get('pk'))
+        context = self.get_serializer_context()
+        context['action'] = 'shopping_cart'
+
         if self.request.method == 'POST':
-            print('AAASFDDFDFSF')
-            serializer = ShoppingCartReadSerializer(data=self.request.data)
-            print('NBVCXVCXVXV')
+            serializer = self.serializer_class(
+                data=self.request.data,
+                context=context
+            )
             serializer.is_valid(raise_exception=True)
-            print('BBBBBBBBBBBb')
             serializer.save(
                 user=self.request.user,
                 recipe=recipe
             )
-            # проверка на то что можно 1 раз добавить рецепт в шк
             return Response(serializer.data)
 
         elif self.request.method == 'DELETE':
@@ -168,6 +182,5 @@ class IngredientViewSet(viewsets.ModelViewSet):
     """
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    # pagination_class = None
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)

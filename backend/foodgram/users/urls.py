@@ -11,7 +11,7 @@ router.register(
     basename='subscriptions',
 )
 router.register(
-    '',
+    'users',
     UserViewSet,
     basename='users',
 )
@@ -27,5 +27,5 @@ urlpatterns = [
         UserDeleteTokenView.as_view(),
         name='login'
     ),
-    path('api/users/', include(router.urls)),
+    path('api/', include(router.urls)),
 ]

@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.db import transaction
 from api.image_serializer import Base64ImageField
-from recipes.models import Recipe
+from recipes.models import Recipe, ShoppingCart, Favorite
 
 from .models import Subscription, User
 
@@ -15,7 +15,7 @@ class UserSerializer(serializers.ModelSerializer):
     а также получения информации о конкретном пользователе.
     """
     username = serializers.CharField(
-        max_length=150,
+        max_length=100,
         validators=[UniqueValidator(queryset=User.objects.all())],
         required=True,
     )
@@ -23,8 +23,15 @@ class UserSerializer(serializers.ModelSerializer):
         validators=[UniqueValidator(queryset=User.objects.all())],
         required=True
     )
-    is_subscribed = serializers.SerializerMethodField()
+    password = serializers.CharField(
+        min_length=8,
+        max_length=100,
+        write_only=True
+    )
 
+    is_subscribed = serializers.SerializerMethodField(read_only=True)
+
+    @transaction.atomic
     def create(self, validated_data):
         password = validated_data.pop('password')
         user = super().create(validated_data)
@@ -100,13 +107,57 @@ class UpdatePasswordSerializer(serializers.ModelSerializer):
 class RecipeReadMinimalSerializer(serializers.ModelSerializer):
     """
     Сериализатор для краткой информации о рецепте.
-    Используется во вложенных рецептах (например, в users/subscriptions).
+    Используется во вложенных рецептах (например, в users/subscriptions),
+    а также при добавлении в избранное или список покупок.
     """
-    image = Base64ImageField(max_length=None, use_url=True)
+    image = Base64ImageField(max_length=None, use_url=True, read_only=True)
+    name = serializers.CharField(read_only=True)
+    cooking_time = serializers.CharField(read_only=True)
+    id = serializers.IntegerField(read_only=True)
 
     class Meta:
         fields = ('id', 'name', 'image', 'cooking_time',)
         model = Recipe
+
+    def validate(self, data):
+        user = self.context['request'].user
+        recipe = get_object_or_404(
+            Recipe,
+            id=self.context['kwargs'].get('pk')
+        )
+        if ShoppingCart.objects.filter(user=user, recipe=recipe):
+            raise serializers.ValidationError(
+                'Рецепт уже добавлен в список покупок!'
+            )
+        if Favorite.objects.filter(user=user, recipe=recipe):
+            raise serializers.ValidationError(
+                'Рецепт уже добавлен в избранное!'
+            )
+        data['recipe'] = recipe
+        return data
+
+    @transaction.atomic
+    def create(self, validated_data):
+        """
+        Определяем action - добавление в избранное или в список покупок
+        и проводим соответствующие операции с БД. Возвращаем данные
+        добавленного рецепта.
+        """
+        recipe = validated_data.pop('recipe')
+        if self.context['action'] == 'favorite':
+            new_favorite = Favorite(
+                user=self.context['request'].user,
+                recipe=recipe
+            )
+            new_favorite.save()
+
+        if self.context['action'] == 'shopping_cart':
+            new_cart_item = ShoppingCart(
+                user=self.context['request'].user,
+                recipe=recipe
+            )
+            new_cart_item.save()
+        return recipe
 
 
 class UserFollowWriteSerializer(UserSerializer):
@@ -170,11 +221,13 @@ class UserFollowWriteSerializer(UserSerializer):
             raise serializers.ValidationError(
                 'Вы уже подписаны на этого пользователя!'
             )
+        data['user'] = user
+        data['author'] = author
         return data
 
     @transaction.atomic
     def create(self, validated_data):
-        user = self.context['request'].user
+        user = validated_data.pop('user')
         author = self.identify_author(validated_data)
         new_subscription = Subscription(
             user=user,
