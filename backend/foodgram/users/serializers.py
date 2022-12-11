@@ -1,9 +1,10 @@
+from django.db import transaction
 from django.shortcuts import get_object_or_404
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from django.db import transaction
-from drf_extra_fields.fields import Base64ImageField
-from recipes.models import Recipe, ShoppingCart, Favorite
+
+from recipes.models import Favorite, Recipe, ShoppingCart
 
 from .models import Subscription, User
 
@@ -24,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
         required=True
     )
     password = serializers.CharField(
-        min_length=8,
+        min_length=3,
         max_length=100,
         write_only=True
     )

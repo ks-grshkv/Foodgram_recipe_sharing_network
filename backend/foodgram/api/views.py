@@ -16,10 +16,8 @@ from .filters import RecipeFilter
 from .pagination import CustomPagination
 from .permissions import IsAuthorOrReadOnlyPermission
 from .renderer import PlainTextRenderer
-from .serializers import (IngredientSerializer,
-                          RecipeReadSerializer,
-                          RecipeWriteSerializer,
-                          TagSerializer)
+from .serializers import (IngredientSerializer, RecipeReadSerializer,
+                          RecipeWriteSerializer, TagSerializer)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):

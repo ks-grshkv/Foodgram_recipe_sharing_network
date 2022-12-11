@@ -1,4 +1,5 @@
 from http import HTTPStatus
+
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, viewsets
@@ -111,14 +112,14 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def set_password(self, request, pk=None):
         """
-        Подписка и отписка на пользователя.
+        Смена пароля.
         """
         user = get_object_or_404(User, id=self.request.user.id)
         new_password = self.request.data['new_password']
         current_password = self.request.data['current_password']
-        if current_password != user.password:
+        if not authenticate(username=user.username, password=current_password):
             return Response(status=HTTPStatus.BAD_REQUEST)
-        user.password = new_password
+        user.set_password(new_password)
         user.save()
         return Response(status=HTTPStatus.OK)
 
