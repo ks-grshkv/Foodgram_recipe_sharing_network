@@ -43,28 +43,6 @@ class UserViewSet(viewsets.ModelViewSet):
         )
         return obj
 
-    # def create(self, serializer):
-    #     serializer = self.serializer_class(data=self.request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     serializer.save()
-
-        # user = User(
-        #     username=self.request.data['username'],
-        #     email=self.request.data['email'],
-        #     password=self.request.data['password'],
-        #     last_name=self.request.data['last_name'],
-        #     first_name=self.request.data['first_name'],
-        # )
-        # user.save()
-        # return Response(serializer.data)
-        # return Response({
-        #     'username': self.request.data['username'],
-        #     'email': self.request.data['email'],
-        #     'id': user.id,
-        #     'first_name': user.first_name,
-        #     'last_name': user.last_name
-        # })
-
     @action(
         detail=False,
         methods=['get', 'patch'],
@@ -181,14 +159,14 @@ class UserGetTokenView(generics.GenericAPIView):
 
         email = serializer.validated_data.get('email')
         password = serializer.validated_data.get('password')
+        user = User.objects.get(email=email)
 
-        user = authenticate(email=email, password=password)
-        if not user:
+        if not authenticate(username=user.username, password=password):
             return Response(status=HTTPStatus.BAD_REQUEST)
 
         Token.objects.filter(user=user).delete()
         refresh = Token.objects.create(user=user)
-        return Response(str(refresh.key))
+        return Response({"auth_token": str(refresh.key)})
 
 
 class UserDeleteTokenView(generics.GenericAPIView):

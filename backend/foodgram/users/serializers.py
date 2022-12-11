@@ -81,6 +81,8 @@ class GetTokenSerializer(serializers.ModelSerializer):
             or (data.get('password') is None)
         ):
             raise serializers.ValidationError('Отправьте не пустой email')
+        if len(User.objects.filter(email=data.get('email'))) == 0:
+            raise serializers.ValidationError('Проверьте правильность email-a')
         return data
 
 
