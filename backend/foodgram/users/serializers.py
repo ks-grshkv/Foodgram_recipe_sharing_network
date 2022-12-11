@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.db import transaction
-from api.image_serializer import Base64ImageField
+from drf_extra_fields.fields import Base64ImageField
 from recipes.models import Recipe, ShoppingCart, Favorite
 
 from .models import Subscription, User
@@ -31,14 +31,6 @@ class UserSerializer(serializers.ModelSerializer):
 
     is_subscribed = serializers.SerializerMethodField(read_only=True)
 
-    @transaction.atomic
-    def create(self, validated_data):
-        password = validated_data.pop('password')
-        user = super().create(validated_data)
-        user.set_password(password)
-        user.save()
-        return user
-
     class Meta:
         fields = (
             'id',
@@ -50,6 +42,14 @@ class UserSerializer(serializers.ModelSerializer):
             'is_subscribed'
         )
         model = User
+
+    @transaction.atomic
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = super().create(validated_data)
+        user.set_password(password)
+        user.save()
+        return user
 
     def get_is_subscribed(self, instance):
         if not self.context:
@@ -81,7 +81,7 @@ class GetTokenSerializer(serializers.ModelSerializer):
             or (data.get('password') is None)
         ):
             raise serializers.ValidationError('Отправьте не пустой email')
-        if len(User.objects.filter(email=data.get('email'))) == 0:
+        if User.objects.filter(email=data.get('email')).count() == 0:
             raise serializers.ValidationError('Проверьте правильность email-a')
         return data
 
@@ -127,14 +127,16 @@ class RecipeReadMinimalSerializer(serializers.ModelSerializer):
             Recipe,
             id=self.context['kwargs'].get('pk')
         )
-        if ShoppingCart.objects.filter(user=user, recipe=recipe):
-            raise serializers.ValidationError(
-                'Рецепт уже добавлен в список покупок!'
-            )
-        if Favorite.objects.filter(user=user, recipe=recipe):
-            raise serializers.ValidationError(
-                'Рецепт уже добавлен в избранное!'
-            )
+        if self.context['action'] == 'shopping_cart':
+            if ShoppingCart.objects.filter(user=user, recipe=recipe):
+                raise serializers.ValidationError(
+                    'Рецепт уже добавлен в список покупок!'
+                )
+        if self.context['action'] == 'favorite':
+            if Favorite.objects.filter(user=user, recipe=recipe):
+                raise serializers.ValidationError(
+                    'Рецепт уже добавлен в избранное!'
+                )
         data['recipe'] = recipe
         return data
 

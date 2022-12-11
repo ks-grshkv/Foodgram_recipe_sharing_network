@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', default='SUP3R-S3CR3T-K3Y-F0R-MY-PR0J3CT')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -194,4 +194,4 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 CORS_ALLOW_ALL_ORIGINS = True
 # CORS_URLS_REGEX = r"^/api/.*$"
 
-CSRF_TRUSTED_ORIGINS=['http://*', 'https://*']
+CSRF_TRUSTED_ORIGINS = ['http://localhost']

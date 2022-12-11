@@ -6,7 +6,7 @@ from .views import (SubscriptionView, UserDeleteTokenView, UserGetTokenView,
 
 router = SimpleRouter()
 router.register(
-    'subscriptions',
+    'users/subscriptions',
     SubscriptionView,
     basename='subscriptions',
 )

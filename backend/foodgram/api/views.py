@@ -181,6 +181,7 @@ class IngredientViewSet(viewsets.ModelViewSet):
     Вьюсет для работы с ингредиентами.
     """
     queryset = Ingredient.objects.all()
+    pagination_class = None
     serializer_class = IngredientSerializer
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    search_fields = ['^name',]

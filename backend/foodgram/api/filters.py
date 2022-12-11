@@ -1,6 +1,6 @@
 import django_filters as filters
 
-from recipes.models import Recipe, Tag, Favorite, ShoppingCart
+from recipes.models import Recipe, Tag
 
 
 class RecipeFilter(filters.FilterSet):
@@ -20,27 +20,20 @@ class RecipeFilter(filters.FilterSet):
         method='filter_is_in_shopping_cart'
     )
 
-    def __init__(self, *args, **kwargs):
-        self.request = kwargs.pop('request')
-        self.user = self.request.user
-        super(RecipeFilter, self).__init__(*args, **kwargs)
-
-    def filter_is_favorited(filterobj, queryset, field_name, value):
-        recipes = [
-                x.recipe.id for x in Favorite.objects.all()
-                if x.user == filterobj.user
-            ]
-        queryset = queryset.filter(id__in=recipes)
-        return queryset
-
-    def filter_is_in_shopping_cart(filterobj, queryset, field_name, value):
-        recipes = [
-                x.recipe.id for x in ShoppingCart.objects.all()
-                if x.user == filterobj.user
-            ]
-        queryset = queryset.filter(id__in=recipes)
-        return queryset
-
     class Meta:
         model = Recipe
         fields = ['tags']
+
+    def filter_is_favorited(filterobj, queryset, field_name, value):
+        if filterobj.request.user.favorite.all().count() == 0:
+            return queryset
+        else:
+            return Recipe.objects.filter(favorite__user=filterobj.request.user)
+
+    def filter_is_in_shopping_cart(filterobj, queryset, field_name, value):
+        if filterobj.request.user.favorite.all().count() == 0:
+            return queryset
+        else:
+            return Recipe.objects.filter(
+                shopping_cart__user=filterobj.request.user
+            )
