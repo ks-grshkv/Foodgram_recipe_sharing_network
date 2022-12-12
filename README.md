@@ -1,12 +1,14 @@
 # praktikum_new_diplom
+# CHECK IT OUT AT http://62.84.113.104/
 
 Foodgram is a web application for sharing recipes. 
 Create your unique recipes and upload them to the website, read other
 users' recipes and add them to favorites. 
 Subscribe to other users to keep up with their new recipes.
 
-### Requests Examples:
+### API Requests Examples for local testing:
 
+```
 Signup for new users:  
 ###  
 POST http://127.0.0.1:8000/api/users/  
@@ -40,7 +42,7 @@ All recipes:
 ###  
 GET http://127.0.0.1:8000/api/recipes/  
 Content-Type: application/json 
-
+```
 
 ### Launching project :
 
@@ -102,4 +104,17 @@ docker-compose exec backend python manage.py collectstatic --no-input
 docker-compose down -v
 ```
 
-!! API_URL to .env
+## .env example:
+
+```
+SECRET_KEY=YOUR-SECRET-KEY
+DB_ENGINE=django.db.backends.postgresql
+DB_NAME=postgres_database
+POSTGRES_USER=postgres_user
+POSTGRES_PASSWORD=postgres_pass
+DB_HOST=127.0.0.1
+# DB_HOST=db # to run with docker-compose
+DB_PORT=5432
+API_URL=http://<ip>
+IP=<ip>
+```
