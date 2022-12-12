@@ -9,32 +9,21 @@ services:
       - ../.env
     restart: always
 
-  # backend:
   #   image: pleasurelf/foodgram:latest
-  #   depends_on:
-  #     - db
-  #   volumes:
-  #     - static_value:/app/static/
-  #     - media_value:/app/media/
-  #   env_file:
-  #     - ./.env
-  #   restart: always
-
   backend:
     build:
       context: ../
       dockerfile: backend/Dockerfile
-    restart: always
+    depends_on:
+      - db
     ports:
      - "8000:8000"
-    # image: aaaa dockerhub
     volumes:
       - static_value:/app/static/
       - media_value:/app/media/
-    depends_on:
-      - db
     env_file:
       - ../.env 
+    restart: always
 
   frontend:
     build:
@@ -42,6 +31,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ../frontend/:/app/result_build/
+    env_file:
+      - ../.env 
 
   nginx:
     image: nginx:1.21.3-alpine
