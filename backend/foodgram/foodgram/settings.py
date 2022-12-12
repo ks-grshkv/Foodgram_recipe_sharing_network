@@ -31,7 +31,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', default='SUP3R-S3CR3T-K3Y-F0R-MY-PR0J3CT')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [os.getenv('API_URL'), 'localhost']
+ALLOWED_HOSTS = [os.getenv('IP'), 'localhost']
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
