@@ -31,7 +31,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', default='SUP3R-S3CR3T-K3Y-F0R-MY-PR0J3CT')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [os.getenv('IP'), 'localhost']
+ALLOWED_HOSTS = [os.getenv('IP'), 'localhost', '127.0.0.1']
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
@@ -195,8 +195,13 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 CORS_ALLOWED_ORIGINS = [
     os.getenv('API_URL'),
     'http://localhost',
+    'http://127.0.0.1'
 ]
 
 CORS_URLS_REGEX = r"^/api/.*$"
 
-CSRF_TRUSTED_ORIGINS = [os.getenv('API_URL'), 'http://localhost']
+CSRF_TRUSTED_ORIGINS = [
+    os.getenv('API_URL'),
+    'http://localhost',
+    'http://127.0.0.1'
+]

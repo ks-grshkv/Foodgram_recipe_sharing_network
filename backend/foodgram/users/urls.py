@@ -25,7 +25,7 @@ urlpatterns = [
     path(
         'api/auth/token/logout/',
         UserDeleteTokenView.as_view(),
-        name='login'
+        name='logout'
     ),
     path('api/', include(router.urls)),
 ]

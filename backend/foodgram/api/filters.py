@@ -25,15 +25,13 @@ class RecipeFilter(filters.FilterSet):
         fields = ['tags']
 
     def filter_is_favorited(filterobj, queryset, field_name, value):
-        if filterobj.request.user.favorite.all().count() == 0:
+        if not value:
             return queryset
-        else:
-            return Recipe.objects.filter(favorite__user=filterobj.request.user)
+        return Recipe.objects.filter(favorite__user=filterobj.request.user)
 
     def filter_is_in_shopping_cart(filterobj, queryset, field_name, value):
-        if filterobj.request.user.favorite.all().count() == 0:
+        if not value:
             return queryset
-        else:
-            return Recipe.objects.filter(
-                shopping_cart__user=filterobj.request.user
-            )
+        return Recipe.objects.filter(
+            shopping_cart__user=filterobj.request.user
+        )
