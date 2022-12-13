@@ -47,5 +47,6 @@ services:
 volumes:
   static_value:
   media_value:
+  frontend_static:
   foodgram_docker_volume:
     external: false
