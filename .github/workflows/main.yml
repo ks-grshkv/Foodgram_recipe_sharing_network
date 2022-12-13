@@ -3,7 +3,7 @@ name: Django-app workflow
 on: [push]
 
 jobs:
-  tests:
+  requirements:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,11 +15,12 @@ jobs:
 
     - name: Install dependencies
       run: | 
-        pip install -r foodgram-project-react/requirements.txt 
+        pip install -r requirements.txt 
 
   build_and_push_to_docker_hub:
       name: Push Docker image to Docker Hub
       runs-on: ubuntu-latest
+      needs: requirements
       steps:
         - name: Check out the repo
           uses: actions/checkout@v2 
@@ -39,6 +40,7 @@ jobs:
             tags: ${{ secrets.DOCKER_USERNAME }}/foodgram:latest
             
   build_and_push_to_docker_hub_frontend:
+      needs: requirements
       name: Push Docker image to Docker Hub Frontend
       runs-on: ubuntu-latest
       steps:
