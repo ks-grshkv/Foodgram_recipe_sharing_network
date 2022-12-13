@@ -9,15 +9,10 @@ services:
       - ../.env
     restart: always
 
-  #   image: pleasurelf/foodgram:latest
   backend:
-    build:
-      context: ../
-      dockerfile: backend/Dockerfile
+    image: pleasurelf/foodgram:latest
     depends_on:
       - db
-    ports:
-     - "8000:8000"
     volumes:
       - static_value:/app/static/
       - media_value:/app/media/
@@ -26,13 +21,13 @@ services:
     restart: always
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: pleasurelf/foodgram_frontend:latest
     volumes:
       - ../frontend/:/app/result_build/
     env_file:
       - ../.env 
+    depends_on:
+      - db
 
   nginx:
     image: nginx:1.21.3-alpine
