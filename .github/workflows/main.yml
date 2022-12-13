@@ -73,12 +73,8 @@ jobs:
         script: |
           cd foodgram-project-react
           git pull
-          cd infra
-          sudo docker-compose stop
-          sudo docker-compose rm foodgram
-          sudo docker-compose rm foodgram_frontend
           touch .env
-          echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
+          echo DB_ENGINE=${{ secrets.DB_ENGINE }} > .env
           echo DB_NAME=${{ secrets.DB_NAME }} >> .env
           echo POSTGRES_USER=${{ secrets.POSTGRES_USER }} >> .env
           echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
@@ -86,4 +82,9 @@ jobs:
           echo IP=${{ secrets.IP }} >> .env
           echo DB_HOST=${{ secrets.API_URL }} >> .env
           echo DB_PORT=${{ secrets.DB_PORT }} >> .env
-          sudo docker-compose up -d
+          cd infra
+          sudo docker-compose stop
+          sudo docker-compose rm foodgram
+          sudo docker-compose rm foodgram_frontend
+          sudo docker-compose up --detach
+          
