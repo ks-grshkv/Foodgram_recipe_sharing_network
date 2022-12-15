@@ -400,4 +400,4 @@ class Api {
   }
 }
 
-export default new Api('http://62.84.113.104' || 'http://localhost', { 'content-type': 'application/json' })
+export default new Api('http://finalprjct-foodgram.sytes.net' || 'http://localhost', { 'content-type': 'application/json' })

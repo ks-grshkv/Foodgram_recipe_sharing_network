@@ -209,5 +209,5 @@ CSRF_TRUSTED_ORIGINS = [
     os.getenv('API_URL'),
     'http://localhost',
     'http://127.0.0.1',
-    'finalprjct-foodgram.sytes.net'
+    'http://finalprjct-foodgram.sytes.net'
 ]
