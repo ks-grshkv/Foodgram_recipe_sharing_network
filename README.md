@@ -1,5 +1,5 @@
 # praktikum_new_diplom
-# CHECK IT OUT AT http://finalprjct-foodgram.sytes.net or http://62.84.113.104/
+# CHECK IT OUT AT http://finalprjct-foodgram.sytes.net
 
 ### test user username sup
 
