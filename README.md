@@ -1,5 +1,8 @@
 # praktikum_new_diplom
-# CHECK IT OUT AT http://62.84.113.104/
+# CHECK IT OUT AT http://finalprjct-foodgram.sytes.net or http://62.84.113.104/
+test user username sup
+email sup@sup.sup
+password sup
 
 Foodgram is a web application for sharing recipes. 
 Create your unique recipes and upload them to the website, read other

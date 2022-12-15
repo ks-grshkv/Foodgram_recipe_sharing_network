@@ -31,7 +31,12 @@ SECRET_KEY = os.getenv('SECRET_KEY', default='SUP3R-S3CR3T-K3Y-F0R-MY-PR0J3CT')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [os.getenv('IP'), 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = [
+    os.getenv('IP'),
+    'localhost',
+    'finalprjct-foodgram.sytes.net',
+    '127.0.0.1'
+]
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
@@ -203,5 +208,6 @@ CORS_ALLOW_ALL_ORIGINS = True
 CSRF_TRUSTED_ORIGINS = [
     os.getenv('API_URL'),
     'http://localhost',
-    'http://127.0.0.1'
+    'http://127.0.0.1',
+    'finalprjct-foodgram.sytes.net'
 ]
