@@ -85,7 +85,6 @@ jobs:
           sudo docker-compose stop
           sudo docker-compose rm foodgram
           sudo docker-compose rm foodgram_frontend
-          sudo docker-compose pull pleasurelf/foodgram_frontend:latest
-          sudo docker-compose pull pleasurelf/foodgram:latest
+          sudo docker-compose pull
           sudo docker-compose up --detach
           
