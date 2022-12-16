@@ -16,6 +16,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'image',
         'cooking_time',
         'favorited_count',
+        'pub_date',
     )
     inlines = [IngredientsToRecipeInline]
     readonly_fields = ('favorited_count', )
