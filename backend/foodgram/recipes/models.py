@@ -111,11 +111,15 @@ class Recipe(models.Model):
         through='IngredientsToRecipe',
         verbose_name='Ингредиенты'
     )
+    pub_date = models.DateTimeField(
+        'Дата создания',
+        auto_now_add=True
+    )
 
     filter_horizontal = ('tags')
 
     class Meta:
-        ordering = ('-name',)
+        ordering = ('-pub_date',)
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 

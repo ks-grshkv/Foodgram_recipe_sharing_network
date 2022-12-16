@@ -127,6 +127,12 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = Recipe
 
+    def validate_cooking_time(self, value):
+        print('AAAA')
+        if value < 1:
+            raise serializers.ValidationError('Укажите время готовки > 1 мин.')
+        return value
+
     def create_ingredients(self, ingredients, recipe):
         ingredient_list = []
         IngredientsToRecipe.objects.filter(recipe=recipe).delete()
