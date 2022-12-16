@@ -67,6 +67,13 @@ class IngredientsToRecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'amount', 'name', 'measurement_unit')
         model = IngredientsToRecipe
 
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError(
+                'Проверьте количество ингредиентов. Оно не может быть < 0'
+            )
+        return value
+
     def get_measurement_unit(self, instance):
         ingredient = Ingredient.objects.get(id=instance.ingredient_id)
         return ingredient.measurement_unit
@@ -128,7 +135,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         model = Recipe
 
     def validate_cooking_time(self, value):
-        print('AAAA')
         if value < 1:
             raise serializers.ValidationError('Укажите время готовки > 1 мин.')
         return value
